@@ -1,17 +1,14 @@
 ---
-
+import Layout from '../layouts/Layout.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="fwm — Physics Window Manager">
+  <main class="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+    <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-white mb-4">
+      fwm — Physics Window Manager
+    </h1>
+    <p class="text-lg text-slate-400 max-w-2xl">
+      A Wayland compositor written in C (wlroots) where windows behave as physical objects with mass, momentum, inertia, and velocity.
+    </p>
+  </main>
+</Layout>
