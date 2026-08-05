@@ -35,11 +35,21 @@ export const PhysicsFeatures: React.FC = () => {
         </h2>
       </div>
 
-      {/* 2 Cards Per Row Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-500">
-        {visibleFeatures.map((item) => (
-          <Proximity key={item.title} preset="tiltCard-magnetic" reach={2.2} falloff={2} duration={0.3} ease="power2.out">
-            <div className="prox-item p-6 bg-slate-900/85 backdrop-blur-md border border-slate-800 hover:border-amber-500/40 rounded-2xl transition-all duration-300 shadow-xl group flex flex-col justify-between h-full" style={{ clipPath: 'polygon(14px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0% 50%)' }}>
+      {/* SINGLE Proximity wrapper for the entire grid! Massive performance boost */}
+      <Proximity
+        preset="tiltCard-magnetic"
+        reach={1}
+        duration={0.3}
+        ease="power2.out"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 transition-all duration-500">
+          {visibleFeatures.map((item) => (
+            <div 
+              key={item.title}
+              // Notice NO transition-all or transition-transform. Just transition-colors.
+              className="prox-item p-6 bg-slate-900/95 border border-slate-800 hover:border-amber-500/40 rounded-2xl transition-colors duration-300 shadow-xl group flex flex-col justify-between h-full will-change-transform transform-gpu" 
+              style={{ clipPath: 'polygon(14px 0%, calc(100% - 14px) 0%, 100% 50%, calc(100% - 14px) 100%, 14px 100%, 0% 50%)' }}
+            >
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="font-mono text-[9px] uppercase tracking-widest text-slate-400">{item.category}</span>
@@ -49,9 +59,9 @@ export const PhysicsFeatures: React.FC = () => {
                 <p className="font-body text-slate-400 text-xs leading-relaxed font-light">{item.desc}</p>
               </div>
             </div>
-          </Proximity>
-        ))}
-      </div>
+          ))}
+        </div>
+      </Proximity>
 
       {/* Expand Button */}
       <div className="flex justify-center mt-12">
