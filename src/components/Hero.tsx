@@ -59,7 +59,7 @@ export const Hero: React.FC = () => {
               {copied ? '✓ Copied' : ''}
             </span>
           </button>
-          
+
           <a
             href="#features"
             className="px-6 py-2.5 bg-amber-400 text-slate-950 font-mono text-xs font-bold uppercase tracking-wider hover:bg-amber-300 transition-colors shadow-[0_0_15px_#d0a82c]"

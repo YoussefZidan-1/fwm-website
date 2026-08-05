@@ -13,7 +13,6 @@ export const Navbar: React.FC = () => {
 
   return (
     <header className="fixed top-3 sm:top-4 left-0 right-0 z-40 flex justify-center px-2 sm:px-4 pointer-events-none">
-      {/* Outer wrapper provides the sharp lozenge border edge */}
       <div
         id="navbar-container"
         className="opacity-0 pointer-events-auto p-[1px] bg-gradient-to-r from-amber-500/40 via-amber-400/80 to-amber-500/40 shadow-[0_0_25px_rgba(208,168,44,0.2)] transition-all duration-300 w-full max-w-[720px]"
@@ -21,14 +20,12 @@ export const Navbar: React.FC = () => {
           clipPath: 'polygon(16px 0%, calc(100% - 16px) 0%, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0% 50%)',
         }}
       >
-        {/* Inner Lozenge Navbar Content */}
         <nav
           className="flex items-center justify-between px-3 sm:px-6 py-1.5 sm:py-2 bg-slate-950/95 backdrop-blur-md text-slate-200"
           style={{
             clipPath: 'polygon(16px 0%, calc(100% - 16px) 0%, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0% 50%)',
           }}
         >
-          {/* Clickable Logo Slot */}
           <a
             href="/"
             aria-label="Home"
@@ -40,7 +37,6 @@ export const Navbar: React.FC = () => {
             />
           </a>
 
-          {/* Smooth Scroll Navigation Links */}
           <div className="flex items-center space-x-1 sm:space-x-2">
             {[
               { name: 'Features', href: '#features' },
@@ -62,7 +58,6 @@ export const Navbar: React.FC = () => {
             ))}
           </div>
 
-          {/* GitHub Action Button */}
           <a
             href="https://github.com/iluaii/fwm"
             target="_blank"

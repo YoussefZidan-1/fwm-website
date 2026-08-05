@@ -15,7 +15,6 @@ export const InstallSection: React.FC = () => {
 
   return (
     <section id="docs" className="relative z-10 pt-2 pb-16 px-4 sm:px-6 max-w-4xl mx-auto text-center">
-      {/* Lozenge Shaped Card Wrapper */}
       <div 
         className="p-[1px] bg-gradient-to-r from-amber-500/30 via-amber-400/60 to-amber-500/30 shadow-[0_0_40px_rgba(208,168,44,0.15)] transition-all duration-300 mx-auto"
         style={{ clipPath: 'polygon(40px 0%, calc(100% - 40px) 0%, 100% 50%, calc(100% - 40px) 100%, 40px 100%, 0% 50%)' }}
@@ -33,7 +32,6 @@ export const InstallSection: React.FC = () => {
             </p>
           </div>
 
-          {/* Toggle Buttons */}
           <div className="flex p-1 bg-slate-950 border border-slate-800 rounded-lg">
             <button
               onClick={() => setMode('quick')}
@@ -49,12 +47,10 @@ export const InstallSection: React.FC = () => {
             </button>
           </div>
 
-          {/* Terminal Block */}
           <div className="relative group w-full max-w-2xl text-left">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/20 to-amber-300/20 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-500" />
-            
+
             <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-950 border border-slate-800 group-hover:border-amber-500/50 p-4 rounded-xl transition-colors">
-              
               <div className="flex flex-col space-y-1 overflow-x-auto whitespace-pre pl-2 text-amber-300/90 font-mono text-xs sm:text-sm w-full">
                 {mode === 'quick' ? (
                   <div className="flex items-center space-x-3">
@@ -78,7 +74,6 @@ export const InstallSection: React.FC = () => {
               </button>
             </div>
           </div>
-          
         </div>
       </div>
     </section>

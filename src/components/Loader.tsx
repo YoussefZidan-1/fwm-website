@@ -21,7 +21,6 @@ export const Loader: React.FC = () => {
       return;
 
     const ctx = gsap.context(() => {
-      // Setup path stroke lengths for drawing
       const paths = svgRef.current?.querySelectorAll('polyline, polygon');
       if (paths) {
         paths.forEach((path) => {
@@ -37,7 +36,6 @@ export const Loader: React.FC = () => {
       const mainTl = gsap.timeline({ defaults: { ease: 'power2.inOut' } });
       const progressObj = { value: 0 };
 
-      // 1. Draw SVG Logo Layers (Mono -> Brackets -> Badge)
       mainTl
         .to('.mono-line', {
           strokeDashoffset: 0,
@@ -64,7 +62,6 @@ export const Loader: React.FC = () => {
           '-=0.2'
         );
 
-      // 2. Animate progress bar & percentage counter
       gsap.to(progressObj, {
         value: 100,
         duration: 2.0,
@@ -82,14 +79,12 @@ export const Loader: React.FC = () => {
             const targetSlot = document.getElementById('navbar-logo-slot');
             const navContainer = document.getElementById('navbar-container');
 
-            // Fade out loading bar and text
             gsap.to(progressContainerRef.current, {
               opacity: 0,
               y: 10,
               duration: 0.3,
             });
 
-            // Fade out black background overlay
             gsap.to(loaderOverlayRef.current, {
               opacity: 0,
               duration: 0.6,
@@ -100,7 +95,6 @@ export const Loader: React.FC = () => {
               },
             });
 
-            // Reveal Lozenge Navbar
             if (navContainer) {
               gsap.to(navContainer, {
                 opacity: 1,
@@ -109,7 +103,6 @@ export const Loader: React.FC = () => {
               });
             }
 
-            // Calculate exact position delta to dock Logo into Navbar slot
             if (targetSlot && logoWrapperRef.current) {
               const targetRect = targetSlot.getBoundingClientRect();
               const logoRect = logoWrapperRef.current.getBoundingClientRect();
@@ -119,7 +112,6 @@ export const Loader: React.FC = () => {
               const deltaY =
                 targetRect.top + targetRect.height / 2 - (logoRect.top + logoRect.height / 2);
 
-              // Elastic spring animation into the navbar slot!
               gsap.to(logoWrapperRef.current, {
                 x: deltaX,
                 y: deltaY,
@@ -144,13 +136,11 @@ export const Loader: React.FC = () => {
 
   return (
     <>
-      {/* Background Overlay */}
       <div
         ref={loaderOverlayRef}
         className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center select-none"
       />
 
-      {/* Logo Wrapper (Fixed layer so it can animate anywhere on screen) */}
       <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center">
         <div
           ref={logoWrapperRef}
@@ -176,7 +166,6 @@ export const Loader: React.FC = () => {
           </svg>
         </div>
 
-        {/* Progress Container */}
         <div
           ref={progressContainerRef}
           className="absolute bottom-1/3 flex flex-col items-center space-y-2 w-56"

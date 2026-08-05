@@ -2,305 +2,15 @@ import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+import { FwmWobble, WOBBLE_GRID } from '../lib/physics/FwmWobble';
+import { playKnockSound } from '../lib/audio/knockSound';
+import { drawTriangle } from '../lib/graphics/drawTriangle';
+import { getLocalWindowCoords } from '../lib/physics/geometry';
+import { getWindowTextureCanvas } from '../lib/graphics/windowTexture';
+import type { WindowBody } from '../types/physics';
+
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 1:1 C-to-JS Port of src/wobble.c (9x9 Spring Lattice Mesh)
-// ─────────────────────────────────────────────────────────────────────────────
-const WOBBLE_GRID = 9;
-const WOBBLE_POINTS = WOBBLE_GRID * WOBBLE_GRID;
-const WOBBLE_K_HOME = 200.0;
-const WOBBLE_C = 16.0;
-const WOBBLE_BEND = 0.3;
-const WOBBLE_K_EDGE = WOBBLE_K_HOME * (WOBBLE_BEND * (WOBBLE_GRID - 1)) * (WOBBLE_BEND * (WOBBLE_GRID - 1)); // 1152.0
-const WOBBLE_C_EDGE = 0.6 * Math.sqrt(WOBBLE_K_EDGE); // ~20.36
-const WOBBLE_GRIP = 8.0;
-const WOBBLE_GRIP_SPAN = 0.25;
-
-class FwmWobble {
-  w = 280;
-  h = 180;
-  px = new Float64Array(WOBBLE_POINTS);
-  py = new Float64Array(WOBBLE_POINTS);
-  vx = new Float64Array(WOBBLE_POINTS);
-  vy = new Float64Array(WOBBLE_POINTS);
-  grip = new Float64Array(WOBBLE_POINTS);
-  anchor = -1;
-  limit = 38.0;
-
-  idx(i: number, j: number) { return j * WOBBLE_GRID + i; }
-  homeX(i: number) { return (this.w * i) / (WOBBLE_GRID - 1); }
-  homeY(j: number) { return (this.h * j) / (WOBBLE_GRID - 1); }
-
-  reset(w: number, h: number) {
-    this.w = Math.max(1, w);
-    this.h = Math.max(1, h);
-    this.anchor = -1;
-    for (let j = 0; j < WOBBLE_GRID; j++) {
-      for (let i = 0; i < WOBBLE_GRID; i++) {
-        const k = this.idx(i, j);
-        this.px[k] = this.homeX(i);
-        this.py[k] = this.homeY(j);
-        this.vx[k] = 0;
-        this.vy[k] = 0;
-        this.grip[k] = 1.0;
-      }
-    }
-  }
-
-  grab(lx: number, ly: number) {
-    const i = Math.min(WOBBLE_GRID - 1, Math.max(0, Math.round((lx * (WOBBLE_GRID - 1)) / this.w)));
-    const j = Math.min(WOBBLE_GRID - 1, Math.max(0, Math.round((ly * (WOBBLE_GRID - 1)) / this.h)));
-    this.anchor = this.idx(i, j);
-
-    const gx = this.homeX(i);
-    const gy = this.homeY(j);
-    const span = WOBBLE_GRIP_SPAN * Math.max(this.w, this.h);
-    const denom = 2.0 * span * span;
-
-    for (let cj = 0; cj < WOBBLE_GRID; cj++) {
-      for (let ci = 0; ci < WOBBLE_GRID; ci++) {
-        const dx = this.homeX(ci) - gx;
-        const dy = this.homeY(cj) - gy;
-        this.grip[this.idx(ci, cj)] = 1.0 + WOBBLE_GRIP * Math.exp(-(dx * dx + dy * dy) / denom);
-      }
-    }
-  }
-
-  release() {
-    this.anchor = -1;
-    for (let k = 0; k < WOBBLE_POINTS; k++) this.grip[k] = 1.0;
-  }
-
-  translate(dx: number, dy: number) {
-    if (dx === 0 && dy === 0) return;
-    for (let k = 0; k < WOBBLE_POINTS; k++) {
-      this.px[k] -= dx;
-      this.py[k] -= dy;
-    }
-    this.clamp();
-  }
-
-  clamp() {
-    if (this.limit <= 0) return;
-    for (let k = 0; k < WOBBLE_POINTS; k++) {
-      const i = k % WOBBLE_GRID;
-      const j = Math.floor(k / WOBBLE_GRID);
-      const hx = this.homeX(i);
-      const hy = this.homeY(j);
-      const dx = this.px[k] - hx;
-      const dy = this.py[k] - hy;
-      const d = Math.hypot(dx, dy);
-
-      if (d > this.limit && d > 0) {
-        const s = this.limit / d;
-        this.px[k] = hx + dx * s;
-        this.py[k] = hy + dy * s;
-
-        const nx = dx / d;
-        const ny = dy / d;
-        const vn = this.vx[k] * nx + this.vy[k] * ny;
-        if (vn > 0) {
-          this.vx[k] -= vn * nx;
-          this.vy[k] -= vn * ny;
-        }
-      }
-    }
-  }
-
-  step(dt: number) {
-    if (dt <= 0) return;
-    const steps = Math.min(32, Math.max(1, Math.ceil(dt / (1.0 / 480.0))));
-    const sdt = dt / steps;
-
-    for (let s = 0; s < steps; s++) {
-      const fx = new Float64Array(WOBBLE_POINTS);
-      const fy = new Float64Array(WOBBLE_POINTS);
-
-      for (let j = 0; j < WOBBLE_GRID; j++) {
-        for (let i = 0; i < WOBBLE_GRID; i++) {
-          const k = this.idx(i, j);
-          const hx = this.homeX(i);
-          const hy = this.homeY(j);
-          const kh = WOBBLE_K_HOME * this.grip[k];
-
-          let ax = kh * (hx - this.px[k]) - WOBBLE_C * this.vx[k];
-          let ay = kh * (hy - this.py[k]) - WOBBLE_C * this.vy[k];
-
-          const di = [-1, 1, 0, 0];
-          const dj = [0, 0, -1, 1];
-          for (let n = 0; n < 4; n++) {
-            const ni = i + di[n];
-            const nj = j + dj[n];
-            if (ni < 0 || nj < 0 || ni >= WOBBLE_GRID || nj >= WOBBLE_GRID) continue;
-            const nk = this.idx(ni, nj);
-            const restDx = this.homeX(ni) - hx;
-            const restDy = this.homeY(nj) - hy;
-
-            ax += WOBBLE_K_EDGE * ((this.px[nk] - this.px[k]) - restDx) + WOBBLE_C_EDGE * (this.vx[nk] - this.vx[k]);
-            ay += WOBBLE_K_EDGE * ((this.py[nk] - this.py[k]) - restDy) + WOBBLE_C_EDGE * (this.vy[nk] - this.vy[k]);
-          }
-
-          fx[k] = ax;
-          fy[k] = ay;
-        }
-      }
-
-      for (let k = 0; k < WOBBLE_POINTS; k++) {
-        this.vx[k] += fx[k] * sdt;
-        this.vy[k] += fy[k] * sdt;
-        this.px[k] += this.vx[k] * sdt;
-        this.py[k] += this.vy[k] * sdt;
-      }
-
-      if (this.anchor >= 0) {
-        const ai = this.anchor % WOBBLE_GRID;
-        const aj = Math.floor(this.anchor / WOBBLE_GRID);
-        this.px[this.anchor] = this.homeX(ai);
-        this.py[this.anchor] = this.homeY(aj);
-        this.vx[this.anchor] = 0;
-        this.vy[this.anchor] = 0;
-      }
-
-      this.clamp();
-    }
-  }
-}
-
-// Synthesized Web Audio Collision Knock (src/sound.c)
-let audioCtx: AudioContext | null = null;
-const playKnockSound = (speed: number, soundEnabled: boolean) => {
-  if (!soundEnabled) return;
-  try {
-    if (!audioCtx) {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      audioCtx = new AudioContextClass();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
-
-    const now = audioCtx.currentTime;
-    const dur = 0.09;
-    const gainVal = Math.min(1.0, Math.max(0.05, (speed - 120) / 1500));
-
-    const osc = audioCtx.createOscillator();
-    const oscGain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(190, now);
-    oscGain.gain.setValueAtTime(0.45 * gainVal, now);
-    oscGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-    osc.connect(oscGain);
-    oscGain.connect(audioCtx.destination);
-    osc.start(now);
-    osc.stop(now + dur);
-
-    const bufferSize = Math.floor(audioCtx.sampleRate * dur);
-    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      const t = i / audioCtx.sampleRate;
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-t * 150.0);
-    }
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = buffer;
-    const noiseGain = audioCtx.createGain();
-    noiseGain.gain.setValueAtTime(0.75 * gainVal, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
-    noise.connect(noiseGain);
-    noiseGain.connect(audioCtx.destination);
-    noise.start(now);
-  } catch {
-    // Autoplay restrictions
-  }
-};
-
-// Affine 2D Triangle Texture Mapping Helper
-function drawTriangle(
-  ctx: CanvasRenderingContext2D,
-  img: HTMLCanvasElement,
-  x0: number, y0: number, u0: number, v0: number,
-  x1: number, y1: number, u1: number, v1: number,
-  x2: number, y2: number, u2: number, v2: number
-) {
-  const denom = u0 * (v1 - v2) - v0 * (u1 - u2) + (u1 * v2 - u2 * v1);
-  if (Math.abs(denom) < 1e-5) return;
-
-  const a = (x0 * (v1 - v2) + x1 * (v2 - v0) + x2 * (v0 - v1)) / denom;
-  const b = (y0 * (v1 - v2) + y1 * (v2 - v0) + y2 * (v0 - v1)) / denom;
-  const c = (x0 * (u2 - u1) + x1 * (u0 - u2) + x2 * (u1 - u0)) / denom;
-  const d = (y0 * (u2 - u1) + y1 * (u0 - u2) + y2 * (u1 - u0)) / denom;
-  const e = (x0 * (u1 * v2 - u2 * v1) + x1 * (u2 * v0 - u0 * v2) + x2 * (u0 * v1 - u1 * v0)) / denom;
-  const f = (y0 * (u1 * v2 - u2 * v1) + y1 * (u2 * v0 - u0 * v2) + y2 * (u0 * v1 - u1 * v0)) / denom;
-
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(x0, y0);
-  ctx.lineTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.closePath();
-  ctx.clip();
-
-  ctx.transform(a, b, c, d, e, f);
-  ctx.drawImage(img, 0, 0);
-  ctx.restore();
-}
-
-// Transform Screen Click (clickX, clickY) into Window Un-rotated Local Space
-function getLocalWindowCoords(win: WindowBody, clickX: number, clickY: number) {
-  const cx = win.x + win.w / 2;
-  const cy = win.y + win.h / 2;
-
-  if (!win.angle) {
-    return {
-      localX: clickX - win.x,
-      localY: clickY - win.y,
-    };
-  }
-
-  const dx = clickX - cx;
-  const dy = clickY - cy;
-  const cosA = Math.cos(-win.angle);
-  const sinA = Math.sin(-win.angle);
-
-  const unrotatedDx = dx * cosA - dy * sinA;
-  const unrotatedDy = dx * sinA + dy * cosA;
-
-  return {
-    localX: unrotatedDx + win.w / 2,
-    localY: unrotatedDy + win.h / 2,
-  };
-}
-
-// Interface for Physics Window Instance
-interface WindowBody {
-  id: number;
-  title: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  w: number;
-  h: number;
-  angle: number;
-  angvel: number;
-  mass: number;
-  isDragging: boolean;
-  grabLxCenter: number;
-  grabLyCenter: number;
-  grabLx: number;
-  grabLy: number;
-  squashT: number;
-  squashAmount: number;
-  squashNx: number;
-  squashNy: number;
-  wobble: FwmWobble;
-  activeDesktop: number;
-  zIndex: number;
-  lastX: number;
-  lastY: number;
 }
 
 export const PhysicsSection: React.FC = () => {
@@ -508,117 +218,6 @@ export const PhysicsSection: React.FC = () => {
     let dragCurX = 0;
     let dragCurY = 0;
 
-    // Render Sharp Flat Window Texture (NO ROUNDED CORNERS, CONSISTENT FASTFETCH)
-    const getWindowTextureCanvas = (win: WindowBody): HTMLCanvasElement => {
-      if (!windowTextureMapRef.current[win.id]) {
-        windowTextureMapRef.current[win.id] = document.createElement('canvas');
-      }
-      const texCanvas = windowTextureMapRef.current[win.id];
-      if (texCanvas.width !== win.w || texCanvas.height !== win.h) {
-        texCanvas.width = win.w;
-        texCanvas.height = win.h;
-      }
-      const texCtx = texCanvas.getContext('2d');
-      if (texCtx) {
-        texCtx.clearRect(0, 0, win.w, win.h);
-
-        // Window Background - SHARP RECTANGLE (NO ROUNDED CORNERS)
-        texCtx.fillStyle = '#0c0e14';
-        texCtx.fillRect(0, 0, win.w, win.h);
-
-        // Window Outer Border - Sharp 2px
-        const isFocused = win.isDragging || telemetry.title === win.title;
-        texCtx.strokeStyle = isFocused ? '#7aa2f7' : '#3b4261';
-        texCtx.lineWidth = 2;
-        texCtx.strokeRect(1, 1, win.w - 2, win.h - 2);
-
-        // Sharp Header Titlebar
-        texCtx.fillStyle = '#13151a';
-        texCtx.fillRect(2, 2, win.w - 4, 26);
-
-        // Header Border Separator
-        texCtx.strokeStyle = '#2ac3de';
-        texCtx.lineWidth = 1;
-        texCtx.beginPath();
-        texCtx.moveTo(2, 28);
-        texCtx.lineTo(win.w - 2, 28);
-        texCtx.stroke();
-
-        // Title Text
-        texCtx.fillStyle = '#7aa2f7';
-        texCtx.font = 'bold 10px monospace';
-        texCtx.fillText(win.title, 10, 18);
-
-        // Window Control Dots
-        texCtx.fillStyle = '#3b4261';
-        texCtx.beginPath();
-        texCtx.arc(win.w - 36, 15, 4, 0, Math.PI * 2);
-        texCtx.arc(win.w - 24, 15, 4, 0, Math.PI * 2);
-        texCtx.fill();
-
-        // Red Close Button (Clickable at win.w - 12)
-        texCtx.fillStyle = '#f7768e';
-        texCtx.beginPath();
-        texCtx.arc(win.w - 12, 15, 4, 0, Math.PI * 2);
-        texCtx.fill();
-
-        // CONSISTENT FASTFETCH CONTENT
-        texCtx.font = '10px monospace';
-        
-        // Fastfetch Logo (Cyan/Blue)
-        texCtx.fillStyle = '#7dcfff';
-        texCtx.fillText('  \\  /\\  /', 10, 46);
-        texCtx.fillText('   \\/  \\/', 10, 58);
-        texCtx.fillText('  |  ||  |', 10, 70);
-        texCtx.fillText('  |  ||  |', 10, 82);
-        texCtx.fillText('   \\/\\/  ', 10, 94);
-        texCtx.fillText('    \\/   ', 10, 106);
-
-        // Fastfetch System Details
-        const startX = 100;
-        texCtx.fillStyle = '#bb9af7';
-        texCtx.fillText('ilu@fwm-host', startX, 46);
-        texCtx.fillStyle = '#3b4261';
-        texCtx.fillText('------------', startX, 56);
-
-        texCtx.fillStyle = '#7aa2f7';
-        texCtx.fillText('OS: ', startX, 70);
-        texCtx.fillStyle = '#c0caf5';
-        texCtx.fillText('Arch Linux x86_64', startX + 24, 70);
-
-        texCtx.fillStyle = '#7aa2f7';
-        texCtx.fillText('Host: ', startX, 84);
-        texCtx.fillStyle = '#c0caf5';
-        texCtx.fillText('fwm Wayland WM', startX + 36, 84);
-
-        texCtx.fillStyle = '#7aa2f7';
-        texCtx.fillText('Kernel: ', startX, 98);
-        texCtx.fillStyle = '#c0caf5';
-        texCtx.fillText('6.12.0-fwm', startX + 48, 98);
-
-        texCtx.fillStyle = '#7aa2f7';
-        texCtx.fillText('WM: ', startX, 112);
-        texCtx.fillStyle = '#2ac3de';
-        texCtx.fillText('fwm (Box2D 3.x)', startX + 24, 112);
-
-        texCtx.fillStyle = '#7aa2f7';
-        texCtx.fillText('Memory: ', startX, 126);
-        texCtx.fillStyle = '#c0caf5';
-        texCtx.fillText('342MiB / 32GiB', startX + 48, 126);
-
-        // Prompt
-        texCtx.fillStyle = '#9ece6a';
-        texCtx.fillText('➜ ', 10, 148);
-        texCtx.fillStyle = '#c0caf5';
-        texCtx.fillText('fwmctl state --live', 24, 148);
-
-        texCtx.fillStyle = '#7aa2f7';
-        texCtx.fillRect(144, 138, 7, 11);
-      }
-      return texCanvas;
-    };
-
-    // Main GSAP Physics Loop
     const physicsTick = (_time: number, deltaTime: number) => {
       const canvas = canvasRef.current;
       const desk = desktopRef.current;
@@ -642,19 +241,17 @@ export const PhysicsSection: React.FC = () => {
         ? (opts.gravityType === 'earth' ? 981.0 : opts.gravityType === 'moon' ? 162.0 : 0.0)
         : 0.0;
 
-      // FWM 1:1 Screen Shake Calculation
       let camOffsetX = 0;
       let camOffsetY = 0;
       if (shakeMag > 0.01) {
         shakeT += dt;
-        shakeMag *= Math.exp(-9.0 * dt); // SHAKE_DECAY = 9.0
+        shakeMag *= Math.exp(-9.0 * dt);
         camOffsetX = Math.round(shakeMag * Math.sin(shakeT * 38.0));
         camOffsetY = Math.round(shakeMag * Math.sin(shakeT * 47.0 + 1.3));
       } else {
         shakeMag = 0;
       }
 
-      // Apply Screen Shake to Whole Desktop Sandbox Container (Status Bar + Canvas)
       if (shakeWrapperRef.current) {
         shakeWrapperRef.current.style.transform = `translate(${camOffsetX}px, ${camOffsetY}px)`;
       }
@@ -664,7 +261,6 @@ export const PhysicsSection: React.FC = () => {
 
       const winList = windowsRef.current;
 
-      // SOLID WINDOW-TO-WINDOW RIGID BODY COLLISIONS & TORQUE IMPULSES
       for (let i = 0; i < winList.length; i++) {
         for (let j = i + 1; j < winList.length; j++) {
           const w1 = winList[i];
@@ -695,7 +291,6 @@ export const PhysicsSection: React.FC = () => {
               penetration = overlapY;
             }
 
-            // POSITIONAL SEPARATION
             if (w1.isDragging && !w2.isDragging) {
               w2.x -= nx * penetration;
               w2.y -= ny * penetration;
@@ -709,7 +304,6 @@ export const PhysicsSection: React.FC = () => {
               w2.y -= (ny * penetration) / 2;
             }
 
-            // IMPULSE & ANGULAR TORQUE RESPONSE
             const rx1 = (c2x - c1x) / 2;
             const ry1 = (c2y - c1y) / 2;
             const rx2 = (c1x - c2x) / 2;
@@ -764,9 +358,8 @@ export const PhysicsSection: React.FC = () => {
               }
 
               if (relSpeed > 120) {
-                // Trigger FWM Screen Shake & Audio Knock
                 const f = Math.min(1.0, relSpeed / 2000.0);
-                const mag = 14.0 * f * f; // SHAKE_MAX_PX = 14.0
+                const mag = 14.0 * f * f;
                 if (mag > shakeMag) {
                   shakeMag = mag;
                   shakeT = 0;
@@ -775,7 +368,6 @@ export const PhysicsSection: React.FC = () => {
               }
             }
 
-            // Apply Resting Alignment for Stacked / Supported Windows
             if (opts.rotationOn) {
               [w1, w2].forEach((w) => {
                 if (w.isDragging) return;
@@ -805,7 +397,7 @@ export const PhysicsSection: React.FC = () => {
                   if (Math.abs(angleDiff) < 0.15 && Math.abs(w.angvel) < 0.8 && wSpeed < 20) {
                     w.angle = nearestTarget;
                     w.angvel = 0;
-                    if (Math.abs(w.vy) < 10) w.vy = 0;
+                    if (Math.abs(w.vy) < 15) w.vy = 0;
                   }
                 }
               });
@@ -834,7 +426,6 @@ export const PhysicsSection: React.FC = () => {
         win.lastY = win.y;
 
         if (win.isDragging) {
-          // --- 1:1 FWM C DRAG PENDULUM SWING ---
           const px = dragCurX;
           const py = dragCurY;
 
@@ -850,13 +441,13 @@ export const PhysicsSection: React.FC = () => {
             } else {
               const nvx = (px - pivotX) / dt;
               const nvy = (py - pivotY) / dt;
-              const kv = dt / (dt + 0.040); // SWING_VEL_TAU
+              const kv = dt / (dt + 0.040);
               const svx = pivotVx + (nvx - pivotVx) * kv;
               const svy = pivotVy + (nvy - pivotVy) * kv;
 
               const rax = (svx - pivotVx) / dt;
               const ray = (svy - pivotVy) / dt;
-              const ka = dt / (dt + 0.080); // SWING_ACC_TAU
+              const ka = dt / (dt + 0.080);
               pivotAx += (rax - pivotAx) * ka;
               pivotAy += (ray - pivotAy) * ka;
 
@@ -880,7 +471,7 @@ export const PhysicsSection: React.FC = () => {
                 win.angvel += alpha * dt;
               }
 
-              win.angvel *= Math.exp(-1.2 * dt); // SWING_DAMP = 1.2
+              win.angvel *= Math.exp(-1.2 * dt);
               win.angvel = Math.max(-8.0, Math.min(8.0, win.angvel));
               win.angle += win.angvel * dt;
 
@@ -894,7 +485,6 @@ export const PhysicsSection: React.FC = () => {
             win.y = dragTargetY;
           }
         } else {
-          // --- FREE FLIGHT & OBB BOUNDARY PHYSICS ---
           win.vy += currentGravity * dt;
 
           const airDamping = currentGravity > 0 ? 0.985 : 0.995;
@@ -907,7 +497,7 @@ export const PhysicsSection: React.FC = () => {
 
           if (opts.rotationOn) {
             win.angle += win.angvel * dt;
-            win.angvel *= Math.exp(-0.35 * dt); // Angular Damping = 0.35
+            win.angvel *= Math.exp(-0.35 * dt);
             win.angvel = Math.max(-8.0, Math.min(8.0, win.angvel));
           } else {
             win.angle = 0;
@@ -927,7 +517,6 @@ export const PhysicsSection: React.FC = () => {
 
           const wallRestitution = currentGravity > 0 ? 0.3 : 0.80;
 
-          // LEFT WALL REFLECTION
           if (cx - extX < 0) {
             cx = extX;
             win.x = cx - win.w / 2;
@@ -941,7 +530,6 @@ export const PhysicsSection: React.FC = () => {
             }
           }
 
-          // RIGHT WALL REFLECTION
           if (cx + extX > boundsW) {
             cx = boundsW - extX;
             win.x = cx - win.w / 2;
@@ -955,7 +543,6 @@ export const PhysicsSection: React.FC = () => {
             }
           }
 
-          // CEILING REFLECTION
           if (cy - extY < 0) {
             cy = extY;
             win.y = cy - win.h / 2;
@@ -966,7 +553,6 @@ export const PhysicsSection: React.FC = () => {
             }
           }
 
-          // FLOOR COLLISION & GROUND SETTLING
           if (cy + extY > boundsH) {
             cy = boundsH - extY;
             win.y = cy - win.h / 2;
@@ -1017,9 +603,8 @@ export const PhysicsSection: React.FC = () => {
             win.squashNx = 0;
             win.squashNy = -1;
 
-            // Trigger FWM Screen Shake & Audio Knock
             const f = Math.min(1.0, hitSpeed / 2000.0);
-            const mag = 14.0 * f * f; // SHAKE_MAX_PX = 14.0
+            const mag = 14.0 * f * f;
             if (mag > shakeMag) {
               shakeMag = mag;
               shakeT = 0;
@@ -1048,7 +633,8 @@ export const PhysicsSection: React.FC = () => {
           }
         }
 
-        if (win.isDragging || telemetry.title === win.title) {
+        const isFocused = win.isDragging || telemetry.title === win.title;
+        if (isFocused) {
           setTelemetry({
             title: win.title,
             vx: Math.round(win.vx),
@@ -1060,7 +646,7 @@ export const PhysicsSection: React.FC = () => {
           });
         }
 
-        const texCanvas = getWindowTextureCanvas(win);
+        const texCanvas = getWindowTextureCanvas(win, windowTextureMapRef.current, isFocused);
 
         ctx.save();
         ctx.translate(win.x + win.w / 2, win.y + win.h / 2);
@@ -1111,7 +697,6 @@ export const PhysicsSection: React.FC = () => {
 
     gsap.ticker.add(physicsTick);
 
-    // Pointer events for dragging, closing, and rotation
     const handlePointerDown = (e: PointerEvent) => {
       if (!desktopRef.current || !canvasRef.current) return;
       const deskRect = desktopRef.current.getBoundingClientRect();
@@ -1322,24 +907,17 @@ export const PhysicsSection: React.FC = () => {
 
       <section id="physics" ref={sectionRef} className="relative w-full h-[300vh] bg-slate-950">
         <div className="sticky top-0 w-full h-screen flex items-center justify-center overflow-hidden">
-
-          {/* Sandbox Desktop Container */}
           <div
             ref={desktopRef}
             className="relative w-[320px] h-[220px] bg-slate-900/95 border border-slate-800 rounded-none overflow-hidden z-10 will-change-transform select-none"
           >
-            {/* Screen Shake Wrapper */}
             <div
               ref={shakeWrapperRef}
               className="relative w-full h-full flex flex-col justify-between items-center will-change-transform"
             >
-              {/* Radial Backdrop Glow */}
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(122,162,247,0.06)_0%,_transparent_75%)] pointer-events-none" />
 
-              {/* FWM Waybar / Status Bar */}
               <header className="w-full px-3 pt-2.5 flex items-center justify-between z-30 pointer-events-auto select-none">
-
-                {/* Left Pill: Telemetry */}
                 <div
                   className="px-3 py-1 bg-[#131519]/90 border border-slate-700/50 text-[#7aa2f7] font-mono text-[10px] flex items-center space-x-1.5"
                   style={{ clipPath: 'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)' }}
@@ -1348,7 +926,6 @@ export const PhysicsSection: React.FC = () => {
                   <span>{telemetry.title} • {telemetry.angle}° • {telemetry.speed}px/s • m {telemetry.mass}</span>
                 </div>
 
-                {/* Center Island: 10 Desktops Indicator */}
                 <div
                   className="px-3 py-1 bg-[#131519]/90 border border-slate-700/50 flex items-center space-x-1.5 relative"
                   style={{ clipPath: 'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)' }}
@@ -1368,7 +945,6 @@ export const PhysicsSection: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Right Section: Clock & Modes Toggle Button */}
                 <div className="flex items-center space-x-1.5 relative">
                   <div
                     className="px-2.5 py-1 bg-[#131519]/90 border border-slate-700/50 text-[#e8ecf0] font-mono text-[10px] font-bold"
@@ -1385,7 +961,6 @@ export const PhysicsSection: React.FC = () => {
                     ⚙ Modes
                   </button>
 
-                  {/* Modes Dropdown Popup Drawer (ui/modes.c) */}
                   {showModes && (
                     <div
                       className="absolute top-9 right-0 w-60 bg-[#131519]/95 border border-[#7aa2f7]/40 p-3 z-40 font-mono text-xs space-y-2.5 text-[#e8ecf0]"
@@ -1489,7 +1064,6 @@ export const PhysicsSection: React.FC = () => {
                 </div>
               </header>
 
-              {/* Instruction Banner */}
               <div
                 ref={instructionRef}
                 className="absolute top-14 px-5 py-1 bg-slate-950/90 backdrop-blur-sm border border-[#7aa2f7]/30 rounded-none font-mono text-[11px] text-[#7aa2f7] opacity-0 pointer-events-none z-20 transition-opacity"
@@ -1497,12 +1071,10 @@ export const PhysicsSection: React.FC = () => {
                 Drag titlebar to throw, click red dot to close window, or stir cursor to spin!
               </div>
 
-              {/* Main Canvas Engine Renderer */}
               <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-auto" />
             </div>
           </div>
 
-          {/* Descriptive Text Reveal Area */}
           <div
             ref={textRef}
             className="absolute flex flex-col space-y-4 z-0 opacity-0 md:right-[5vw] md:top-1/2 md:-translate-y-1/2 md:w-[40vw] bottom-[5vh] left-[5vw] w-[90vw]"
@@ -1543,7 +1115,6 @@ export const PhysicsSection: React.FC = () => {
               </li>
             </ul>
           </div>
-
         </div>
       </section>
     </>
