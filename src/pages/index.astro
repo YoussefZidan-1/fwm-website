@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import { Hero } from '../components/Hero';
 import { FloatingGlassShapes } from '../components/FloatingGlassShapes';
 import { InstallSection } from '../components/InstallSection';
+import { PhysicsSection } from '../components/PhysicsSection';
 import { PhysicsFeatures } from '../components/PhysicsFeatures';
 ---
 
@@ -11,6 +12,7 @@ import { PhysicsFeatures } from '../components/PhysicsFeatures';
     <FloatingGlassShapes client:only="react" />
     <Hero client:visible />
     <InstallSection client:visible />
+    <PhysicsSection client:only="react" />
     <PhysicsFeatures client:visible />
   </main>
 </Layout>
