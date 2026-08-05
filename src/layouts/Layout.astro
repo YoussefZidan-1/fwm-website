@@ -1,5 +1,7 @@
 ---
 import Analytics from '@vercel/analytics/astro';
+import { Loader } from '../components/Loader';
+import '../styles/global.css';
 
 interface Props {
   title?: string;
@@ -21,8 +23,14 @@ const {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
+
+    <!-- Google Fonts: JetBrains Mono, Playfair Display, Lora -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@1,400..900&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500 selection:text-white">
+  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950">
+    <Loader client:only="react" />
     <slot />
     <Analytics />
   </body>
