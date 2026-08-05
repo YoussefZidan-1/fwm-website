@@ -1,21 +1,84 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export const InstallSection: React.FC = () => {
+  const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState<'quick' | 'manual'>('quick');
+
+  const quickCommand = "curl -sL https://fwm-website.vercel.app/install-fwm.sh | bash";
+  const manualCommand = "git clone https://github.com/iluaii/fwm.git\ncd fwm\n./install.sh";
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(mode === 'quick' ? quickCommand : manualCommand);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <section id="docs" className="relative z-10 pt-2 pb-16 px-4 sm:px-6 max-w-4xl mx-auto text-center">
-      <div className="bg-slate-900/90 backdrop-blur-md border border-amber-500/30 p-8 sm:p-10 rounded-3xl shadow-2xl space-y-6">
-        <h2 className="font-display italic text-3xl sm:text-5xl font-bold text-amber-400">
-          Ready to experience fwm?
-        </h2>
-        <p className="font-body text-slate-300 text-base sm:text-lg max-w-xl mx-auto font-light">
-          One command installs dependencies (pacman / apt / dnf / xbps), builds Box2D v3, compiles fwm, and registers the session.
-        </p>
+      {/* Lozenge Shaped Card Wrapper */}
+      <div 
+        className="p-[1px] bg-gradient-to-r from-amber-500/30 via-amber-400/60 to-amber-500/30 shadow-[0_0_40px_rgba(208,168,44,0.15)] transition-all duration-300 mx-auto"
+        style={{ clipPath: 'polygon(40px 0%, calc(100% - 40px) 0%, 100% 50%, calc(100% - 40px) 100%, 40px 100%, 0% 50%)' }}
+      >
+        <div 
+          className="bg-slate-900/95 backdrop-blur-md p-10 sm:p-14 space-y-8 flex flex-col items-center"
+          style={{ clipPath: 'polygon(40px 0%, calc(100% - 40px) 0%, 100% 50%, calc(100% - 40px) 100%, 40px 100%, 0% 50%)' }}
+        >
+          <div className="space-y-4">
+            <h2 className="font-display italic text-3xl sm:text-5xl font-bold text-amber-400 drop-shadow-md">
+              Ready to experience fwm?
+            </h2>
+            <p className="font-body text-slate-300 text-base sm:text-lg max-w-xl mx-auto font-light">
+              Choose your preferred installation method. Supported on Arch, Debian/Ubuntu, Fedora, and Void Linux.
+            </p>
+          </div>
 
-        <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl font-mono text-xs sm:text-sm text-left text-amber-300/90 overflow-x-auto space-y-1">
-          <p className="text-slate-500"># Clone & install fwm session</p>
-          <p><span className="text-amber-500">$</span> git clone https://github.com/iluaii/fwm.git</p>
-          <p><span className="text-amber-500">$</span> cd fwm</p>
-          <p><span className="text-amber-500">$</span> ./install.sh</p>
+          {/* Toggle Buttons */}
+          <div className="flex p-1 bg-slate-950 border border-slate-800 rounded-lg">
+            <button
+              onClick={() => setMode('quick')}
+              className={`px-6 py-2 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'quick' ? 'bg-amber-400 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              Quick Install
+            </button>
+            <button
+              onClick={() => setMode('manual')}
+              className={`px-6 py-2 text-xs font-mono font-bold uppercase tracking-wider rounded-md transition-all ${mode === 'manual' ? 'bg-amber-400 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              Manual Install
+            </button>
+          </div>
+
+          {/* Terminal Block */}
+          <div className="relative group w-full max-w-2xl text-left">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/20 to-amber-300/20 rounded-xl blur opacity-30 group-hover:opacity-100 transition duration-500" />
+            
+            <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between bg-slate-950 border border-slate-800 group-hover:border-amber-500/50 p-4 rounded-xl transition-colors">
+              
+              <div className="flex flex-col space-y-1 overflow-x-auto whitespace-pre pl-2 text-amber-300/90 font-mono text-xs sm:text-sm w-full">
+                {mode === 'quick' ? (
+                  <div className="flex items-center space-x-3">
+                    <span className="text-slate-600 select-none">$</span>
+                    <span>{quickCommand}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-3"><span className="text-slate-600 select-none">$</span><span>git clone https://github.com/iluaii/fwm.git</span></div>
+                    <div className="flex items-center space-x-3"><span className="text-slate-600 select-none">$</span><span>cd fwm</span></div>
+                    <div className="flex items-center space-x-3"><span className="text-slate-600 select-none">$</span><span>./install.sh</span></div>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={copyToClipboard}
+                className="mt-4 sm:mt-0 sm:ml-4 shrink-0 flex items-center justify-center bg-slate-800 hover:bg-amber-400 text-slate-300 hover:text-slate-950 px-4 py-2 rounded-lg font-mono text-xs font-bold transition-all shadow-md active:scale-95"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+          
         </div>
       </div>
     </section>

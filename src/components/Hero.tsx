@@ -3,33 +3,30 @@ import { ProximityText } from 'z-proximity-engine';
 
 export const Hero: React.FC = () => {
   const [copied, setCopied] = useState(false);
+  const installCommand = "curl -sL https://fwm-website.vercel.app/install-fwm.sh | bash";
 
   const copyCommand = () => {
-    navigator.clipboard.writeText('./install.sh');
+    navigator.clipboard.writeText(installCommand);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <section className="relative min-h-[95vh] flex flex-col items-center justify-center px-6 pt-28 pb-8 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-slate-950 to-slate-950">
-      {/* High-Performance Radial Gradient (Replaces expensive blur) */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.15)_0%,_transparent_60%)] pointer-events-none" />
 
       <div className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center space-y-8">
-        {/* Lozenge Tagline Badge */}
         <div
           className="inline-flex items-center space-x-2 px-4 py-1.5 bg-slate-900/90 border border-amber-500/30 text-amber-300 font-mono text-xs tracking-widest uppercase shadow-[0_0_15px_rgba(208,168,44,0.15)]"
           style={{ clipPath: 'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)' }}
         >
           <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-          <span>Wayland Compositor • Box2D 3.x</span>
+          <span>FWM • Wayland Compositor • Box2D 3.x</span>
         </div>
 
-        {/* Main Headline */}
         <h1 className="text-4xl sm:text-6xl md:text-7xl font-display font-light text-slate-100 tracking-tight leading-[1.15]">
           Welcome to a world where{' '}
           <span className="inline-block">
-            {/* Interactive "physics" word with ZProximityEngine tiltCard and magnetic spatial response */}
             <ProximityText
               text="physics"
               preset="tiltCard-magnetic-opacity-glow"
@@ -56,16 +53,19 @@ export const Hero: React.FC = () => {
             className="group relative flex items-center space-x-3 px-5 py-2.5 bg-slate-900/90 border border-amber-500/30 text-slate-200 font-mono text-xs hover:border-amber-400/80 transition-all cursor-pointer shadow-lg"
             style={{ clipPath: 'polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%)' }}
           >
-            <span className="text-amber-400">$</span>
-            <span>./install.sh</span>
-            <span className="text-slate-500 group-hover:text-amber-300 transition-colors ml-2">{copied ? '✓ copied!' : '📋'}</span>
+            <span className="text-amber-400">📋</span>
+            <span>Copy Install Command</span>
+            <span className="text-slate-500 group-hover:text-amber-300 transition-colors ml-2">
+              {copied ? '✓ Copied' : ''}
+            </span>
           </button>
+          
           <a
-            href="#docs"
+            href="#features"
             className="px-6 py-2.5 bg-amber-400 text-slate-950 font-mono text-xs font-bold uppercase tracking-wider hover:bg-amber-300 transition-colors shadow-[0_0_15px_#d0a82c]"
             style={{ clipPath: 'polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%)' }}
           >
-            Explore Docs
+            Explore Features
           </a>
         </div>
       </div>
