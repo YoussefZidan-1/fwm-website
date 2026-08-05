@@ -54,7 +54,7 @@ export const Hero: React.FC = () => {
         </p>
 
         {/* Call to Actions & Terminal Copy */}
-        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 pt-4">
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 pt-2">
           {/* Lozenge Terminal Copy Button */}
           <button
             onClick={copyCommand}

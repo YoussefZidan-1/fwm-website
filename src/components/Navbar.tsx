@@ -1,6 +1,16 @@
 import React from 'react';
 
 export const Navbar: React.FC = () => {
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const target = document.querySelector(href);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <header className="fixed top-3 sm:top-4 left-0 right-0 z-40 flex justify-center px-2 sm:px-4 pointer-events-none">
       {/* Outer wrapper provides the sharp lozenge border edge */}
@@ -30,16 +40,17 @@ export const Navbar: React.FC = () => {
             />
           </a>
 
-          {/* Lozenge Navigation Links */}
+          {/* Smooth Scroll Navigation Links */}
           <div className="flex items-center space-x-1 sm:space-x-2">
             {[
               { name: 'Features', href: '#features' },
-              { name: 'Physics', href: '#physics' },
+              { name: 'Physics', href: '#features' },
               { name: 'Docs', href: '#docs' },
             ].map((link) => (
               <a
                 key={link.name}
                 href={link.href}
+                onClick={(e) => handleNavClick(e, link.href)}
                 className="relative px-2.5 sm:px-4 py-1 font-mono text-[10px] sm:text-xs uppercase tracking-wider text-slate-300 hover:text-slate-950 font-medium transition-colors duration-300 group overflow-hidden block"
                 style={{
                   clipPath: 'polygon(8px 0%, calc(100% - 8px) 0%, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0% 50%)',

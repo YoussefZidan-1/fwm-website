@@ -1,10 +1,16 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { Hero } from '../components/Hero';
+import { FloatingGlassShapes } from '../components/FloatingGlassShapes';
+import { InstallSection } from '../components/InstallSection';
+import { PhysicsFeatures } from '../components/PhysicsFeatures';
 ---
 
 <Layout title="fwm — Physics Window Manager">
-  <main>
+  <main className="relative overflow-hidden">
+    <FloatingGlassShapes client:only="react" />
     <Hero client:visible />
+    <InstallSection client:visible />
+    <PhysicsFeatures client:visible />
   </main>
 </Layout>
