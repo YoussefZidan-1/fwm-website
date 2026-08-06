@@ -18,12 +18,13 @@ export const PhysicsSection: React.FC = () => {
   const desktopRef = useRef<HTMLDivElement>(null);
   const shakeWrapperRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const textStep1Ref = useRef<HTMLDivElement>(null);
+  const textStep2Ref = useRef<HTMLDivElement>(null);
   const instructionRef = useRef<HTMLDivElement>(null);
 
   const windowTextureMapRef = useRef<{ [key: number]: HTMLCanvasElement }>({});
 
-  const [isExpanded, setIsExpanded] = useState(false);
   const [clock, setClock] = useState('');
   const [activeDesktop, setActiveDesktop] = useState(0);
 
@@ -52,7 +53,7 @@ export const PhysicsSection: React.FC = () => {
 
   const windowsRef = useRef<WindowBody[]>([]);
 
-  // Setup EXACTLY ONE terminal window on initial load
+  // Initialize terminal window on initial load
   useEffect(() => {
     const wob = new FwmWobble();
     wob.reset(280, 180);
@@ -98,9 +99,16 @@ export const PhysicsSection: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // GSAP ScrollTrigger Sequence
+  // Tight GSAP ScrollTrigger Sequence — No Dead White Space
   useEffect(() => {
-    if (!sectionRef.current || !desktopRef.current || !textRef.current || !instructionRef.current) return;
+    if (
+      !sectionRef.current ||
+      !desktopRef.current ||
+      !textStep1Ref.current ||
+      !textStep2Ref.current ||
+      !instructionRef.current
+    )
+      return;
 
     const isMobile = window.innerWidth < 768;
 
@@ -109,43 +117,82 @@ export const PhysicsSection: React.FC = () => {
         scrollTrigger: {
           trigger: sectionRef.current,
           start: 'top top',
-          end: '+=2800',
-          scrub: 1,
+          end: '+=1800',
+          scrub: 0.6,
           pin: true,
           onUpdate: (self) => {
-            if (self.progress > 0.15 && self.progress < 0.85) {
-              if (!isExpanded) setIsExpanded(true);
-            } else {
-              if (isExpanded) setIsExpanded(false);
+            if (progressBarRef.current) {
+              const progressPct = Math.min(100, Math.max(0, self.progress * 100));
+              progressBarRef.current.style.width = `${progressPct}%`;
             }
           },
         },
       });
 
+      // Stage 1: Expand to full view
       tl.to(desktopRef.current, {
-        width: '92vw',
-        height: '85vh',
+        width: '88vw',
+        height: '80vh',
+        x: 0,
+        y: 0,
         borderRadius: '0px',
-        borderColor: 'rgba(122, 162, 247, 0.4)',
-        duration: 1,
+        borderColor: 'rgba(245, 158, 11, 0.5)',
+        duration: 0.8,
         ease: 'power2.inOut',
-      });
+      })
+        .to(instructionRef.current, { opacity: 1, duration: 0.3 }, '-=0.3')
+        .to({}, { duration: 0.6 })
+        .to(instructionRef.current, { opacity: 0, duration: 0.3 });
 
-      tl.to(instructionRef.current, { opacity: 1, duration: 0.5 }, '-=0.5');
-      tl.to({}, { duration: 2 });
-      tl.to(instructionRef.current, { opacity: 0, duration: 0.5 });
-
+      // Stage 2: Move WM Window to the RIGHT & Fade in Text Step 1 on the LEFT
       if (isMobile) {
-        tl.to(desktopRef.current, { height: '44vh', y: '-16vh', borderRadius: '0px', duration: 1 })
-          .fromTo(textRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1 }, '<');
+        tl.to(desktopRef.current, {
+          height: '42vh',
+          y: '-18vh',
+          x: 0,
+          duration: 1,
+          ease: 'power2.inOut',
+        }).fromTo(
+          textStep1Ref.current,
+          { opacity: 0, y: 25 },
+          { opacity: 1, y: '10vh', duration: 1, ease: 'power2.out' },
+          '<'
+        );
       } else {
-        tl.to(desktopRef.current, { width: '48vw', height: '64vh', x: '-22vw', borderRadius: '0px', duration: 1 })
-          .fromTo(textRef.current, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 1 }, '<');
+        tl.to(desktopRef.current, {
+          width: '46vw',
+          height: '66vh',
+          x: '20vw',
+          y: 0,
+          duration: 1,
+          ease: 'power2.inOut',
+        }).fromTo(
+          textStep1Ref.current,
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, duration: 1, ease: 'power2.out' },
+          '<'
+        );
       }
+
+      tl.to({}, { duration: 1 }); // Hold Step 1
+
+      // Stage 3: Step 1 Out, Step 2 In
+      tl.to(textStep1Ref.current, {
+        opacity: 0,
+        y: -25,
+        duration: 0.6,
+        ease: 'power2.in',
+      }).fromTo(
+        textStep2Ref.current,
+        { opacity: 0, y: 25 },
+        { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }
+      );
+
+      tl.to({}, { duration: 1 }); // Hold Step 2 through section unpin
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [isExpanded]);
+  }, []);
 
   // Spawn extra window on demand
   const spawnWindow = () => {
@@ -207,9 +254,12 @@ export const PhysicsSection: React.FC = () => {
     let swirlAbs = 0;
     let swirlSpan = 0;
 
-    let pivotX = 0, pivotY = 0;
-    let pivotVx = 0, pivotVy = 0;
-    let pivotAx = 0, pivotAy = 0;
+    let pivotX = 0,
+      pivotY = 0;
+    let pivotVx = 0,
+      pivotVy = 0;
+    let pivotAx = 0,
+      pivotAy = 0;
     let pivotHave = false;
 
     let activeDragWin: WindowBody | null = null;
@@ -238,7 +288,11 @@ export const PhysicsSection: React.FC = () => {
       const opts = optsRef.current;
 
       const currentGravity = opts.gravityOn
-        ? (opts.gravityType === 'earth' ? 981.0 : opts.gravityType === 'moon' ? 162.0 : 0.0)
+        ? opts.gravityType === 'earth'
+          ? 981.0
+          : opts.gravityType === 'moon'
+          ? 162.0
+          : 0.0
         : 0.0;
 
       let camOffsetX = 0;
@@ -279,7 +333,9 @@ export const PhysicsSection: React.FC = () => {
           const overlapY = (w1.h + w2.h) / 2 - Math.abs(dy);
 
           if (overlapX > 0 && overlapY > 0) {
-            let nx = 0, ny = 0, penetration = 0;
+            let nx = 0,
+              ny = 0,
+              penetration = 0;
 
             if (overlapX < overlapY) {
               nx = dx > 0 ? 1 : -1;
@@ -320,7 +376,7 @@ export const PhysicsSection: React.FC = () => {
             const velAlongNormal = relVx * nx + relVy * ny;
 
             if (velAlongNormal < 0) {
-              const restitution = relSpeed > 100 ? 0.3 : 0.05;
+              const restitution = relSpeed > 120 ? 0.3 : 0.05;
               const invMass1 = 1 / w1.mass;
               const invMass2 = 1 / w2.mass;
               const invI1 = 12 / (w1.mass * (w1.w * w1.w + w1.h * w1.h));
@@ -329,7 +385,8 @@ export const PhysicsSection: React.FC = () => {
               const rCrossN1 = rx1 * ny - ry1 * nx;
               const rCrossN2 = rx2 * ny - ry2 * nx;
 
-              const impulse = -(1 + restitution) * velAlongNormal /
+              const impulse =
+                (-1 * (1 + restitution) * velAlongNormal) /
                 (invMass1 + invMass2 + rCrossN1 * rCrossN1 * invI1 + rCrossN2 * rCrossN2 * invI2);
 
               const impulseX = impulse * nx;
@@ -342,7 +399,7 @@ export const PhysicsSection: React.FC = () => {
                 w1.vy += impulseY * invMass1;
                 if (opts.rotationOn) {
                   w1.angvel += (rx1 * impulseY - ry1 * impulseX) * invI1 * torqueFactor;
-                  w1.angvel *= 0.90;
+                  w1.angvel *= 0.9;
                   w1.angvel = Math.max(-8.0, Math.min(8.0, w1.angvel));
                 }
               }
@@ -352,7 +409,7 @@ export const PhysicsSection: React.FC = () => {
                 w2.vy -= impulseY * invMass2;
                 if (opts.rotationOn) {
                   w2.angvel -= (rx2 * impulseY - ry2 * impulseX) * invI2 * torqueFactor;
-                  w2.angvel *= 0.90;
+                  w2.angvel *= 0.9;
                   w2.angvel = Math.max(-8.0, Math.min(8.0, w2.angvel));
                 }
               }
@@ -414,7 +471,7 @@ export const PhysicsSection: React.FC = () => {
         if (opts.massMode === 'ram') {
           win.mass = 342.0;
         } else {
-          win.mass = Math.round((win.w * win.h * 0.0005) * 10) / 10;
+          win.mass = Math.round(win.w * win.h * 0.0005 * 10) / 10;
         }
 
         const moveDx = win.x - win.lastX;
@@ -434,30 +491,36 @@ export const PhysicsSection: React.FC = () => {
 
           if (opts.rotationOn) {
             if (!pivotHave) {
-              pivotX = px; pivotY = py;
-              pivotVx = 0; pivotVy = 0;
-              pivotAx = 0; pivotAy = 0;
+              pivotX = px;
+              pivotY = py;
+              pivotVx = 0;
+              pivotVy = 0;
+              pivotAx = 0;
+              pivotAy = 0;
               pivotHave = true;
             } else {
               const nvx = (px - pivotX) / dt;
               const nvy = (py - pivotY) / dt;
-              const kv = dt / (dt + 0.040);
+              const kv = dt / (dt + 0.04);
               const svx = pivotVx + (nvx - pivotVx) * kv;
               const svy = pivotVy + (nvy - pivotVy) * kv;
 
               const rax = (svx - pivotVx) / dt;
               const ray = (svy - pivotVy) / dt;
-              const ka = dt / (dt + 0.080);
+              const ka = dt / (dt + 0.08);
               pivotAx += (rax - pivotAx) * ka;
               pivotAy += (ray - pivotAy) * ka;
 
               pivotAx = Math.max(-20000, Math.min(20000, pivotAx));
               pivotAy = Math.max(-20000, Math.min(20000, pivotAy));
 
-              pivotX = px; pivotY = py;
-              pivotVx = svx; pivotVy = svy;
+              pivotX = px;
+              pivotY = py;
+              pivotVx = svx;
+              pivotVy = svy;
 
-              const c = Math.cos(win.angle), s = Math.sin(win.angle);
+              const c = Math.cos(win.angle),
+                s = Math.sin(win.angle);
               const rx = -(c * win.grabLxCenter - s * win.grabLyCenter);
               const ry = -(s * win.grabLxCenter + c * win.grabLyCenter);
 
@@ -515,7 +578,7 @@ export const PhysicsSection: React.FC = () => {
           let hit = false;
           let hitSpeed = 0;
 
-          const wallRestitution = currentGravity > 0 ? 0.3 : 0.80;
+          const wallRestitution = currentGravity > 0 ? 0.3 : 0.8;
 
           if (cx - extX < 0) {
             cx = extX;
@@ -618,7 +681,8 @@ export const PhysicsSection: React.FC = () => {
           win.wobble.step(dt);
         }
 
-        let sx = 1.0, sy = 1.0;
+        let sx = 1.0,
+          sy = 1.0;
         if (win.squashAmount > 0.001) {
           win.squashT += dt;
           const env = win.squashAmount * Math.exp(-12.0 * win.squashT);
@@ -640,7 +704,7 @@ export const PhysicsSection: React.FC = () => {
             vx: Math.round(win.vx),
             vy: Math.round(win.vy),
             angvel: parseFloat(win.angvel.toFixed(2)),
-            angle: Math.round((win.angle * 180 / Math.PI) % 360),
+            angle: Math.round(((win.angle * 180) / Math.PI) % 360),
             mass: win.mass,
             speed: Math.round(Math.hypot(win.vx, win.vy)),
           });
@@ -671,13 +735,19 @@ export const PhysicsSection: React.FC = () => {
               const k11 = (j + 1) * grid + (i + 1);
               const k01 = (j + 1) * grid + i;
 
-              const x00 = win.wobble.px[k00], y00 = win.wobble.py[k00];
-              const x10 = win.wobble.px[k10], y10 = win.wobble.py[k10];
-              const x11 = win.wobble.px[k11], y11 = win.wobble.py[k11];
-              const x01 = win.wobble.px[k01], y01 = win.wobble.py[k01];
+              const x00 = win.wobble.px[k00],
+                y00 = win.wobble.py[k00];
+              const x10 = win.wobble.px[k10],
+                y10 = win.wobble.py[k10];
+              const x11 = win.wobble.px[k11],
+                y11 = win.wobble.py[k11];
+              const x01 = win.wobble.px[k01],
+                y01 = win.wobble.py[k01];
 
-              const u0 = i * gridStepU,       v0 = j * gridStepV;
-              const u1 = (i + 1) * gridStepU, v1 = (j + 1) * gridStepV;
+              const u0 = i * gridStepU,
+                v0 = j * gridStepV;
+              const u1 = (i + 1) * gridStepU,
+                v1 = (j + 1) * gridStepV;
 
               drawTriangle(ctx, texCanvas, x00, y00, u0, v0, x10, y10, u1, v0, x11, y11, u1, v1);
               drawTriangle(ctx, texCanvas, x00, y00, u0, v0, x11, y11, u1, v1, x01, y01, u0, v1);
@@ -710,12 +780,7 @@ export const PhysicsSection: React.FC = () => {
 
         const { localX, localY } = getLocalWindowCoords(win, clickX, clickY);
 
-        if (
-          localX >= 0 &&
-          localX <= win.w &&
-          localY >= 0 &&
-          localY <= win.h
-        ) {
+        if (localX >= 0 && localX <= win.w && localY >= 0 && localY <= win.h) {
           const maxZ = Math.max(...winList.map((w) => w.zIndex), 10);
           win.zIndex = maxZ + 1;
 
@@ -790,9 +855,12 @@ export const PhysicsSection: React.FC = () => {
       dragTargetY = curLy - activeDragWin.grabLy;
 
       const now = performance.now() / 1000;
-      histX.shift(); histX.push(curLx);
-      histY.shift(); histY.push(curLy);
-      histTime.shift(); histTime.push(now);
+      histX.shift();
+      histX.push(curLx);
+      histY.shift();
+      histY.push(curLy);
+      histTime.shift();
+      histTime.push(now);
       if (histCount < 4) histCount++;
 
       if (histCount >= 2) {
@@ -817,7 +885,7 @@ export const PhysicsSection: React.FC = () => {
                 while (d < -Math.PI) d += 2 * Math.PI;
 
                 if (dtSwirl < 0.2 && Math.abs(d) < Math.PI / 2.0) {
-                  const decay = Math.exp(-dtSwirl / 0.20);
+                  const decay = Math.exp(-dtSwirl / 0.2);
                   swirlAcc = swirlAcc * decay + d;
                   swirlAbs = swirlAbs * decay + Math.abs(d);
                   swirlSpan = swirlSpan * decay + dtSwirl;
@@ -898,37 +966,115 @@ export const PhysicsSection: React.FC = () => {
           <span>Interactive Compositor Sandbox</span>
         </div>
         <h2 className="font-display italic text-3xl sm:text-5xl font-bold text-slate-100">
-          Scroll down to <span className="text-amber-400">taste some physics</span> yourself
+          Scroll down to <span className="text-amber-400">taste the physics</span> yourself
         </h2>
         <p className="font-body text-slate-400 text-sm sm:text-base max-w-xl mx-auto font-light leading-relaxed">
           Experience fwm's Box2D 3.x rigid body dynamics, corner pendulum torque, swirl spin momentum, 9x9 wobble mesh, and collision knock sound.
         </p>
       </div>
 
-      <section id="physics" ref={sectionRef} className="relative w-full h-[300vh] bg-slate-950">
-        <div className="sticky top-0 w-full h-screen flex items-center justify-center overflow-hidden">
+      <section id="physics" ref={sectionRef} className="relative w-full h-[220vh] bg-slate-950">
+        <div className="w-full h-screen flex items-center justify-center overflow-hidden relative">
+          {/* MULTI-STEP EXPLANATION TEXT COLUMN (LEFT SIDE) */}
+          <div className="absolute left-[4vw] top-[18vh] w-[90vw] md:w-[40vw] z-30 pointer-events-none">
+            {/* Step 1: Real-World Dynamics */}
+            <div ref={textStep1Ref} className="opacity-0 space-y-4">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs uppercase tracking-widest rounded-none">
+                <span>01 • Rigid Body Dynamics</span>
+              </div>
+              <h3 className="font-display italic text-3xl md:text-5xl font-bold text-slate-100 drop-shadow-md">
+                Physics-First <span className="text-amber-400">Window Control</span>
+              </h3>
+              <p className="font-body text-slate-300 text-sm md:text-base font-light leading-relaxed">
+                In <strong className="text-slate-100">fwm</strong>, window geometry is driven directly by C rigid-body simulation in <code className="text-amber-300 font-mono text-xs bg-slate-900 px-1.5 py-0.5 border border-slate-800">src/physics.c</code>. Every window is a physical body in the Box2D 3.x world rather than a coordinate assignment.
+              </p>
+              <ul className="space-y-2.5 pt-1 font-body text-xs md:text-sm text-slate-300">
+                <li className="flex items-start space-x-2.5">
+                  <span className="text-amber-400 font-mono font-bold">✓</span>
+                  <span><strong className="text-slate-100">Mass & Density:</strong> Derived from area (0.0005 kg/px²) or dynamic process RSS footprint from <code className="text-amber-300 font-mono text-xs">/proc/$PID/stat</code>.</span>
+                </li>
+                <li className="flex items-start space-x-2.5">
+                  <span className="text-amber-400 font-mono font-bold">✓</span>
+                  <span><strong className="text-slate-100">Throw Momentum:</strong> Drag releases calculate real vector velocities (v = Δp / Δt) clamped to 1800 px/s limits.</span>
+                </li>
+                <li className="flex items-start space-x-2.5">
+                  <span className="text-amber-400 font-mono font-bold">✓</span>
+                  <span><strong className="text-slate-100">Impulse & Friction:</strong> Collisions calculate impulse momentum with 0.3 restitution and Coulomb contact friction.</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Step 2: Under The Hood Architecture */}
+            <div ref={textStep2Ref} className="opacity-0 absolute top-0 left-0 w-full space-y-4">
+              <div className="inline-flex items-center space-x-2 px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs uppercase tracking-widest rounded-none">
+                <span>02 • Under The Hood</span>
+              </div>
+              <h3 className="font-display italic text-3xl md:text-5xl font-bold text-slate-100 drop-shadow-md">
+                Engineered in C for <span className="text-amber-400">Wayland</span>
+              </h3>
+              <p className="font-body text-slate-300 text-sm md:text-base font-light leading-relaxed">
+                Built natively in C11 on <code className="text-amber-300 font-mono text-xs bg-slate-900 px-1.5 py-0.5 border border-slate-800">wlroots 0.17+</code> and <code className="text-amber-300 font-mono text-xs bg-slate-900 px-1.5 py-0.5 border border-slate-800">Box2D 3.x</code> to give zero sub-pixel jitter.
+              </p>
+              <ul className="space-y-2.5 pt-1 font-body text-xs md:text-sm text-slate-300">
+                <li className="flex items-start space-x-2.5">
+                  <span className="text-amber-400 font-mono font-bold">✓</span>
+                  <span><strong className="text-slate-100">60Hz Box2D Loop:</strong> Fixed-step physics integration bridged directly to Wayland scene graph nodes.</span>
+                </li>
+                <li className="flex items-start space-x-2.5">
+                  <span className="text-amber-400 font-mono font-bold">✓</span>
+                  <span><strong className="text-slate-100">9x9 Spring Lattice:</strong> Hooke's Law mesh deforms windows during drags (<code className="text-amber-300 font-mono text-xs">src/wobble.c</code>).</span>
+                </li>
+                <li className="flex items-start space-x-2.5">
+                  <span className="text-amber-400 font-mono font-bold">✓</span>
+                  <span><strong className="text-slate-100">CAVA Physical Bars:</strong> Real-time FFT audio loopback turns floor bars into solid bodies that toss windows!</span>
+                </li>
+                <li className="flex items-start space-x-2.5">
+                  <span className="text-amber-400 font-mono font-bold">✓</span>
+                  <span><strong className="text-slate-100">Procedural Audio Knock:</strong> In-engine audio synthesis generates collision clicks based on impact velocity.</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* SIMULATED WM WINDOW (GLIDES TO THE RIGHT SIDE) */}
           <div
             ref={desktopRef}
-            className="relative w-[320px] h-[220px] bg-slate-900/95 border border-slate-800 rounded-none overflow-hidden z-10 will-change-transform select-none"
+            className="relative w-[340px] h-[230px] bg-slate-900/95 border border-slate-800 rounded-none overflow-hidden z-20 will-change-transform select-none shadow-2xl"
           >
+            {/* SCROLL PROGRESS BAR AT TOP OF SIMULATED WM WINDOW */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-slate-950/80 z-50 overflow-hidden">
+              <div
+                ref={progressBarRef}
+                className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-300 w-0 transition-all duration-75 shadow-[0_0_10px_#d0a82c]"
+              />
+            </div>
+
             <div
               ref={shakeWrapperRef}
               className="relative w-full h-full flex flex-col justify-between items-center will-change-transform"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(122,162,247,0.06)_0%,_transparent_75%)] pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.06)_0%,_transparent_75%)] pointer-events-none" />
 
-              <header className="w-full px-3 pt-2.5 flex items-center justify-between z-30 pointer-events-auto select-none">
+              <header className="w-full px-3 pt-3 flex items-center justify-between z-30 pointer-events-auto select-none">
                 <div
-                  className="px-3 py-1 bg-[#131519]/90 border border-slate-700/50 text-[#7aa2f7] font-mono text-[10px] flex items-center space-x-1.5"
-                  style={{ clipPath: 'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)' }}
+                  className="px-3 py-1 bg-[#131519]/90 border border-slate-700/50 text-amber-400 font-mono text-[10px] flex items-center space-x-1.5"
+                  style={{
+                    clipPath:
+                      'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)',
+                  }}
                 >
-                  <span className="w-1.5 h-1.5 rounded-none bg-[#7aa2f7] animate-pulse" />
-                  <span>{telemetry.title} • {telemetry.angle}° • {telemetry.speed}px/s • m {telemetry.mass}</span>
+                  <span className="w-1.5 h-1.5 rounded-none bg-amber-400 animate-pulse" />
+                  <span>
+                    {telemetry.title} • {telemetry.angle}° • {telemetry.speed}px/s • m {telemetry.mass}
+                  </span>
                 </div>
 
                 <div
                   className="px-3 py-1 bg-[#131519]/90 border border-slate-700/50 flex items-center space-x-1.5 relative"
-                  style={{ clipPath: 'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)' }}
+                  style={{
+                    clipPath:
+                      'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)',
+                  }}
                 >
                   {Array.from({ length: 10 }).map((_, i) => (
                     <button
@@ -948,30 +1094,39 @@ export const PhysicsSection: React.FC = () => {
                 <div className="flex items-center space-x-1.5 relative">
                   <div
                     className="px-2.5 py-1 bg-[#131519]/90 border border-slate-700/50 text-[#e8ecf0] font-mono text-[10px] font-bold"
-                    style={{ clipPath: 'polygon(8px 0%, calc(100% - 8px) 0%, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0% 50%)' }}
+                    style={{
+                      clipPath:
+                        'polygon(8px 0%, calc(100% - 8px) 0%, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0% 50%)',
+                    }}
                   >
                     <span>{clock || '21:42'}</span>
                   </div>
 
                   <button
                     onClick={() => setShowModes(!showModes)}
-                    className="px-2.5 py-1 bg-[#7aa2f7] hover:bg-blue-400 text-slate-950 font-mono text-[10px] font-bold transition-colors cursor-pointer"
-                    style={{ clipPath: 'polygon(8px 0%, calc(100% - 8px) 0%, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0% 50%)' }}
+                    className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-mono text-[10px] font-bold transition-colors cursor-pointer"
+                    style={{
+                      clipPath:
+                        'polygon(8px 0%, calc(100% - 8px) 0%, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0% 50%)',
+                    }}
                   >
                     ⚙ Modes
                   </button>
 
                   {showModes && (
                     <div
-                      className="absolute top-9 right-0 w-60 bg-[#131519]/95 border border-[#7aa2f7]/40 p-3 z-40 font-mono text-xs space-y-2.5 text-[#e8ecf0]"
-                      style={{ clipPath: 'polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%)' }}
+                      className="absolute top-9 right-0 w-60 bg-[#131519]/95 border border-amber-500/40 p-3 z-40 font-mono text-xs space-y-2.5 text-[#e8ecf0]"
+                      style={{
+                        clipPath:
+                          'polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%)',
+                      }}
                     >
                       <div className="flex items-center justify-between text-slate-300">
                         <span>Gravity</span>
                         <button
                           onClick={() => setGravityOn(!gravityOn)}
                           className={`px-2 py-0.5 text-[10px] font-bold rounded-none cursor-pointer ${
-                            gravityOn ? 'bg-[#7aa2f7] text-slate-950' : 'bg-slate-800 text-slate-400'
+                            gravityOn ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
                           }`}
                         >
                           {gravityOn ? 'ON' : 'OFF'}
@@ -990,7 +1145,7 @@ export const PhysicsSection: React.FC = () => {
                               }}
                               className={`px-1.5 py-0.5 text-[9px] uppercase font-bold rounded-none cursor-pointer ${
                                 gravityType === type && gravityOn
-                                  ? 'bg-[#7aa2f7] text-slate-950'
+                                  ? 'bg-amber-400 text-slate-950'
                                   : 'bg-slate-800 text-slate-400'
                               }`}
                             >
@@ -1008,7 +1163,9 @@ export const PhysicsSection: React.FC = () => {
                               key={mode}
                               onClick={() => setMassMode(mode)}
                               className={`px-1.5 py-0.5 text-[9px] uppercase font-bold rounded-none cursor-pointer ${
-                                massMode === mode ? 'bg-[#7aa2f7] text-slate-950' : 'bg-slate-800 text-slate-400'
+                                massMode === mode
+                                  ? 'bg-amber-400 text-slate-950'
+                                  : 'bg-slate-800 text-slate-400'
                               }`}
                             >
                               {mode}
@@ -1022,7 +1179,7 @@ export const PhysicsSection: React.FC = () => {
                         <button
                           onClick={() => setRotationOn(!rotationOn)}
                           className={`px-2 py-0.5 text-[10px] font-bold rounded-none cursor-pointer ${
-                            rotationOn ? 'bg-[#7aa2f7] text-slate-950' : 'bg-slate-800 text-slate-400'
+                            rotationOn ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
                           }`}
                         >
                           {rotationOn ? 'ON' : 'OFF'}
@@ -1034,7 +1191,7 @@ export const PhysicsSection: React.FC = () => {
                         <button
                           onClick={() => setWobbleOn(!wobbleOn)}
                           className={`px-2 py-0.5 text-[10px] font-bold rounded-none cursor-pointer ${
-                            wobbleOn ? 'bg-[#7aa2f7] text-slate-950' : 'bg-slate-800 text-slate-400'
+                            wobbleOn ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
                           }`}
                         >
                           {wobbleOn ? 'ON' : 'OFF'}
@@ -1046,7 +1203,7 @@ export const PhysicsSection: React.FC = () => {
                         <button
                           onClick={() => setSoundOn(!soundOn)}
                           className={`px-2 py-0.5 text-[10px] font-bold rounded-none cursor-pointer ${
-                            soundOn ? 'bg-[#7aa2f7] text-slate-950' : 'bg-slate-800 text-slate-400'
+                            soundOn ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-slate-400'
                           }`}
                         >
                           {soundOn ? 'ON' : 'OFF'}
@@ -1066,54 +1223,13 @@ export const PhysicsSection: React.FC = () => {
 
               <div
                 ref={instructionRef}
-                className="absolute top-14 px-5 py-1 bg-slate-950/90 backdrop-blur-sm border border-[#7aa2f7]/30 rounded-none font-mono text-[11px] text-[#7aa2f7] opacity-0 pointer-events-none z-20 transition-opacity"
+                className="absolute top-14 px-5 py-1.5 bg-slate-950/90 backdrop-blur-sm border border-amber-500/40 rounded-none font-mono text-xs text-amber-300 opacity-0 pointer-events-none z-20 transition-opacity shadow-lg"
               >
                 Drag titlebar to throw, click red dot to close window, or stir cursor to spin!
               </div>
 
               <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-auto" />
             </div>
-          </div>
-
-          <div
-            ref={textRef}
-            className="absolute flex flex-col space-y-4 z-0 opacity-0 md:right-[5vw] md:top-1/2 md:-translate-y-1/2 md:w-[40vw] bottom-[5vh] left-[5vw] w-[90vw]"
-          >
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1 bg-[#7aa2f7]/10 border border-[#7aa2f7]/30 text-[#7aa2f7] font-mono text-xs uppercase tracking-widest rounded-none w-max">
-              <span>Rigid-Body Wayland Engine</span>
-            </div>
-            <h2 className="font-display italic text-4xl md:text-5xl font-bold text-slate-100 drop-shadow-md">
-              Simulated with <span className="text-[#7aa2f7]">Box2D 3.x</span>
-            </h2>
-            <p className="font-body text-slate-400 text-base md:text-lg font-light leading-relaxed">
-              fwm isn't just CSS transitions. Every window is simulated by a rigid-body engine at 60 steps per second with authentic C physics.
-            </p>
-            <ul className="space-y-3 pt-2">
-              <li className="flex items-start space-x-3">
-                <span className="text-[#7aa2f7] font-bold font-mono">01</span>
-                <p className="font-body text-xs md:text-sm text-slate-300">
-                  <strong className="text-slate-100">Dull Heavy Bounces:</strong> Configured with 0.3 restitution and Coulomb surface friction for realistic weight.
-                </p>
-              </li>
-              <li className="flex items-start space-x-3">
-                <span className="text-[#7aa2f7] font-bold font-mono">02</span>
-                <p className="font-body text-xs md:text-sm text-slate-300">
-                  <strong className="text-slate-100">9x9 Jelly Wobble Mesh:</strong> Hooke's law springs calculate velocity lag to bend windows during drags.
-                </p>
-              </li>
-              <li className="flex items-start space-x-3">
-                <span className="text-[#7aa2f7] font-bold font-mono">03</span>
-                <p className="font-body text-xs md:text-sm text-slate-300">
-                  <strong className="text-slate-100">Swirl Spin Windup:</strong> Stir the cursor in circles to wind up window rotation momentum.
-                </p>
-              </li>
-              <li className="flex items-start space-x-3">
-                <span className="text-[#7aa2f7] font-bold font-mono">04</span>
-                <p className="font-body text-xs md:text-sm text-slate-300">
-                  <strong className="text-slate-100">Synthesized Audio Knock:</strong> Procedurally generates audio feedback on wall and window impacts.
-                </p>
-              </li>
-            </ul>
           </div>
         </div>
       </section>
