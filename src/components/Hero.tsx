@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ProximityText } from 'z-proximity-engine';
+import { Proximity, ProximityText } from 'z-proximity-engine';
 
 export const Hero: React.FC = () => {
   const [copied, setCopied] = useState(false);
@@ -12,17 +12,20 @@ export const Hero: React.FC = () => {
   };
 
   return (
-    <section className="relative min-h-[95vh] flex flex-col items-center justify-center px-6 pt-28 pb-8 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-slate-950 to-slate-950">
+    <section className="relative min-h-[90vh] flex flex-col items-center justify-center px-6 pt-24 pb-12 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-slate-950 to-slate-950">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-[radial-gradient(circle_at_center,_rgba(245,158,11,0.15)_0%,_transparent_60%)] pointer-events-none" />
 
       <div className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center space-y-8">
-        <div
-          className="inline-flex items-center space-x-2 px-4 py-1.5 bg-slate-900/90 border border-amber-500/30 text-amber-300 font-mono text-xs tracking-widest uppercase shadow-[0_0_15px_rgba(208,168,44,0.15)]"
-          style={{ clipPath: 'polygon(10px 0%, calc(100% - 10px) 0%, 100% 50%, calc(100% - 10px) 100%, 10px 100%, 0% 50%)' }}
-        >
-          <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-          <span>FWM • Wayland Compositor • Box2D 3.x</span>
-        </div>
+        
+        {/* Proximity Magnetic Badge */}
+        <Proximity preset="tiltCard-magnetic" reach={1.5} duration={0.3} ease="power2.out">
+          <div
+            className="prox-item inline-flex items-center space-x-2.5 px-4 py-2 bg-slate-900/90 border border-amber-500/30 text-amber-300 font-mono text-xs tracking-widest uppercase rounded-full shadow-[0_0_20px_rgba(208,168,44,0.15)] cursor-pointer"
+          >
+            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+            <span>FWM • Wayland Compositor • Box2D 3.x</span>
+          </div>
+        </Proximity>
 
         <h1 className="text-4xl sm:text-6xl md:text-7xl font-display font-light text-slate-100 tracking-tight leading-[1.15]">
           Welcome to a world where{' '}
@@ -34,11 +37,10 @@ export const Hero: React.FC = () => {
               reach={2}
               duration={1}
               opacity={[0.7, 1]}
-              glow={[0, 5]}
+              glow={[0, 6]}
               ease="elastic"
               splitBy="letter"
-            >
-            </ProximityText>
+            />
           </span>{' '}
           is not boring anymore.
         </h1>
@@ -47,26 +49,25 @@ export const Hero: React.FC = () => {
           Windows behave as real physical objects with mass, momentum, inertia, and velocity. Throw windows, stack them under Earth gravity, or watch them tumble in zero-g.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 pt-2">
+        {/* Hero CTAs */}
+        <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 pt-4">
+          <a
+            href="#physics"
+            className="group relative px-7 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(208,168,44,0.4)] hover:shadow-[0_0_30px_#d0a82c] flex items-center space-x-2"
+            style={{ clipPath: 'polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%)' }}
+          >
+            <span>🎮 Try Sandbox</span>
+            <span className="group-hover:translate-x-1 transition-transform">↓</span>
+          </a>
+
           <button
             onClick={copyCommand}
-            className="group relative flex items-center space-x-3 px-5 py-2.5 bg-slate-900/90 border border-amber-500/30 text-slate-200 font-mono text-xs hover:border-amber-400/80 transition-all cursor-pointer shadow-lg"
+            className="group relative flex items-center space-x-3 px-6 py-3 bg-slate-900/90 border border-slate-700/80 hover:border-amber-400/80 text-slate-200 font-mono text-xs transition-all cursor-pointer shadow-lg rounded-none"
             style={{ clipPath: 'polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%)' }}
           >
             <span className="text-amber-400">📋</span>
-            <span>Copy Install Command</span>
-            <span className="text-slate-500 group-hover:text-amber-300 transition-colors ml-2">
-              {copied ? '✓ Copied' : ''}
-            </span>
+            <span>{copied ? '✓ Copied Command!' : 'Copy Install Command'}</span>
           </button>
-
-          <a
-            href="#features"
-            className="px-6 py-2.5 bg-amber-400 text-slate-950 font-mono text-xs font-bold uppercase tracking-wider hover:bg-amber-300 transition-colors shadow-[0_0_15px_#d0a82c]"
-            style={{ clipPath: 'polygon(12px 0%, calc(100% - 12px) 0%, 100% 50%, calc(100% - 12px) 100%, 12px 100%, 0% 50%)' }}
-          >
-            Explore Features
-          </a>
         </div>
       </div>
     </section>
