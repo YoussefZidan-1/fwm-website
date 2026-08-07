@@ -36,15 +36,9 @@ export const PhysicsSection: React.FC = () => {
   const [massMode, setMassMode] = useState<'size' | 'ram'>('size');
   const [showModes, setShowModes] = useState(false);
 
-  const [telemetry, setTelemetry] = useState({
-    title: 'fwm-terminal',
-    vx: 0,
-    vy: 0,
-    angvel: 0,
-    angle: 0,
-    mass: 25.2,
-    speed: 0,
-  });
+  const telemetryRef = useRef<HTMLSpanElement>(null);
+  const focusedTitleRef = useRef<string>('fwm-terminal');
+  const lastTelemetryTextRef = useRef<string>('');
 
   const optsRef = useRef({ gravityOn, gravityType, rotationOn, wobbleOn, soundOn, massMode });
   useEffect(() => {
@@ -697,17 +691,20 @@ export const PhysicsSection: React.FC = () => {
           }
         }
 
-        const isFocused = win.isDragging || telemetry.title === win.title;
+        const isFocused = win.isDragging || focusedTitleRef.current === win.title;
         if (isFocused) {
-          setTelemetry({
-            title: win.title,
-            vx: Math.round(win.vx),
-            vy: Math.round(win.vy),
-            angvel: parseFloat(win.angvel.toFixed(2)),
-            angle: Math.round(((win.angle * 180) / Math.PI) % 360),
-            mass: win.mass,
-            speed: Math.round(Math.hypot(win.vx, win.vy)),
-          });
+          if (win.isDragging) {
+            focusedTitleRef.current = win.title;
+          }
+          const speed = Math.round(Math.hypot(win.vx, win.vy));
+          const angle = Math.round(((win.angle * 180) / Math.PI) % 360);
+          const telemetryText = `${win.title} • ${angle}° • ${speed}px/s • m ${win.mass}`;
+        
+          // Direct DOM update (0 React re-renders!)
+          if (telemetryRef.current && lastTelemetryTextRef.current !== telemetryText) {
+            telemetryRef.current.textContent = telemetryText;
+            lastTelemetryTextRef.current = telemetryText;
+          }
         }
 
         const texCanvas = getWindowTextureCanvas(win, windowTextureMapRef.current, isFocused);
@@ -1064,8 +1061,8 @@ export const PhysicsSection: React.FC = () => {
                   }}
                 >
                   <span className="w-1.5 h-1.5 rounded-none bg-amber-400 animate-pulse" />
-                  <span>
-                    {telemetry.title} • {telemetry.angle}° • {telemetry.speed}px/s • m {telemetry.mass}
+                  <span ref={telemetryRef}>
+                    fwm-terminal • 0° • 0px/s • m 25.2
                   </span>
                 </div>
 
