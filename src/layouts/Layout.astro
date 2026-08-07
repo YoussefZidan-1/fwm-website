@@ -92,7 +92,7 @@ const {
 
         <script>
           import gsap from 'gsap';
-
+        
           const runPreloaderAnimation = () => {
             const overlay = document.getElementById('app-preloader-overlay');
             const contentContainer = document.getElementById('app-preloader-content');
@@ -101,18 +101,31 @@ const {
             const bar = document.getElementById('app-preloader-bar');
             const percentText = document.getElementById('app-preloader-percent');
             const svg = document.getElementById('app-preloader-svg');
-
+        
             if (!overlay || !contentContainer || !logoWrapper || !progressContainer || !bar || !percentText || !svg) return;
-
+        
+            // 1. IF ALREADY PRELOADED IN THIS SESSION (e.g. Navigating back from /docs), BYPASS IMMEDIATELY!
+            if (sessionStorage.getItem('fwm_preloaded') === 'true') {
+              overlay.style.display = 'none';
+              contentContainer.style.display = 'none';
+              logoWrapper.style.display = 'none';
+              progressContainer.style.display = 'none';
+              const navContainer = document.getElementById('navbar-container');
+              if (navContainer) {
+                navContainer.style.opacity = '1';
+              }
+              return;
+            }
+        
             // Ensure preloader NEVER blocks pointer events
             overlay.style.pointerEvents = 'none';
             contentContainer.style.pointerEvents = 'none';
             logoWrapper.style.pointerEvents = 'none';
             progressContainer.style.pointerEvents = 'none';
-
+        
             const paths = svg.querySelectorAll('polyline, polygon');
             const pathData: { el: SVGGeometryElement; length: number }[] = [];
-
+        
             paths.forEach((path) => {
               const p = path as SVGGeometryElement;
               const length = p.getTotalLength ? p.getTotalLength() : 400;
@@ -120,24 +133,24 @@ const {
               p.style.strokeDashoffset = `${length}`;
               pathData.push({ el: p, length });
             });
-
+        
             let targetProgress = 15;
             let currentProgress = 0;
             let isCompleted = false;
-
+        
             // --- REAL ASSET LOAD TRACKING ---
             let totalAssets = 1;
             let loadedAssets = 0;
-
+        
             const incrementProgress = () => {
               loadedAssets++;
               const calculated = Math.floor((loadedAssets / totalAssets) * 100);
               targetProgress = Math.max(targetProgress, Math.min(100, calculated));
             };
-
+        
             const images = Array.from(document.querySelectorAll('img'));
             totalAssets += images.length;
-
+        
             images.forEach((img) => {
               if (img.complete) {
                 incrementProgress();
@@ -146,22 +159,20 @@ const {
                 img.addEventListener('error', incrementProgress, { once: true });
               }
             });
-
+        
             if (document.fonts) {
               document.fonts.ready.then(incrementProgress).catch(incrementProgress);
             } else {
               incrementProgress();
             }
-
+        
             if (document.readyState === 'complete') {
               targetProgress = 100;
             } else {
               window.addEventListener('load', () => { targetProgress = 100; }, { once: true });
-              // Safety Fallback: Cap wait time to 1.2s max
               setTimeout(() => { targetProgress = 100; }, 1200);
             }
-
-            // Auto-advance safety tick so bar never freezes at 0%
+        
             const safetyInterval = setInterval(() => {
               if (targetProgress < 90) {
                 targetProgress += 15;
@@ -169,17 +180,20 @@ const {
                 clearInterval(safetyInterval);
               }
             }, 180);
-
-            // --- DOCKING HANDOVER ---
+        
             const performDocking = () => {
               clearInterval(safetyInterval);
+              
+              // 2. MARK SESSION AS PRELOADED
+              sessionStorage.setItem('fwm_preloaded', 'true');
+        
               const targetSlot = document.getElementById('navbar-logo-slot');
               const navContainer = document.getElementById('navbar-container');
-
+        
               contentContainer.style.display = 'none';
-
+        
               gsap.to(progressContainer, { opacity: 0, y: 10, duration: 0.2 });
-
+        
               gsap.to(overlay, {
                 opacity: 0,
                 duration: 0.5,
@@ -187,23 +201,23 @@ const {
                   overlay.style.display = 'none';
                 },
               });
-
+        
               if (navContainer) {
                 gsap.to(navContainer, { opacity: 1, duration: 0.4 });
               }
-
+        
               if (targetSlot && logoWrapper) {
                 const targetRect = targetSlot.getBoundingClientRect();
                 const logoRect = logoWrapper.getBoundingClientRect();
-
+        
                 const svgAR = 248 / 140;
                 const slotAR = targetRect.width / targetRect.height;
                 const finalWidth = slotAR > svgAR ? targetRect.height * svgAR : targetRect.width;
                 const exactScale = finalWidth / logoRect.width;
-
+        
                 const deltaX = targetRect.left + targetRect.width / 2 - (logoRect.left + logoRect.width / 2);
                 const deltaY = targetRect.top + targetRect.height / 2 - (logoRect.top + logoRect.height / 2);
-
+        
                 gsap.to(logoWrapper, {
                   x: deltaX,
                   y: deltaY,
@@ -216,36 +230,38 @@ const {
                 });
               }
             };
-
+        
             const tickerCallback = () => {
               if (isCompleted) return;
-
+        
               currentProgress += (targetProgress - currentProgress) * 0.15;
-
+        
               if (Math.abs(targetProgress - currentProgress) < 0.5 && targetProgress >= 100) {
                 currentProgress = 100;
               }
-
+        
               const displayPct = Math.floor(currentProgress);
               percentText.innerText = `${displayPct}%`;
               bar.style.width = `${currentProgress}%`;
-
+        
               const ratio = currentProgress / 100;
               pathData.forEach(({ el, length }) => {
                 el.style.strokeDashoffset = `${length * (1 - ratio)}`;
               });
-
+        
               if (currentProgress >= 100 && !isCompleted) {
                 isCompleted = true;
                 gsap.ticker.remove(tickerCallback);
                 performDocking();
               }
             };
-
+        
             gsap.ticker.add(tickerCallback);
           };
-
+        
+          // 3. LISTEN TO BOTH DOMContentLoaded AND ASTRO'S CLIENT ROUTER PAGE LOAD
           document.addEventListener('DOMContentLoaded', runPreloaderAnimation);
+          document.addEventListener('astro:page-load', runPreloaderAnimation);
         </script>
       </>
     )}
