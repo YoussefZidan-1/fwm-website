@@ -1,0 +1,3 @@
+[submodule "fwm-repo"]
+	path = fwm-repo
+	url = https://github.com/iluaii/fwm.git

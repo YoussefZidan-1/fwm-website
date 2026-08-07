@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "prebuild": "git submodule update --init --remote && cd fwm-repo && git sparse-checkout init --no-cone && git sparse-checkout set 'docs/*'",
     "preview": "astro preview",
     "astro": "astro"
   },

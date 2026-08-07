@@ -1,5 +1,6 @@
 ---
 import Analytics from '@vercel/analytics/astro';
+import { ClientRouter } from 'astro:transitions';
 import { Navbar } from '../components/Navbar';
 import { SmoothScroll } from '../components/SmoothScroll';
 import '../styles/global.css';
@@ -7,11 +8,13 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  showPreloader?: boolean;
 }
 
 const {
   title = "fwm — Physics Window Manager (Wayland)",
-  description = "A Wayland compositor written in C where windows behave as physical objects with mass, momentum, inertia, and velocity."
+  description = "A Wayland compositor written in C where windows behave as physical objects with mass, momentum, inertia, and velocity.",
+  showPreloader = false,
 } = Astro.props;
 ---
 
@@ -25,237 +28,230 @@ const {
     <title>{title}</title>
     <meta name="description" content={description} />
 
-    <!-- Google Fonts: JetBrains Mono, Playfair Display, Lora -->
+    <ClientRouter />
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@1,400..900&display=swap" rel="stylesheet">
   </head>
   <body class="bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
-    <!-- 1. BLACK BACKGROUND OVERLAY (z-50) -->
-    <div
-      id="app-preloader-overlay"
-      class="fixed inset-0 z-50 bg-slate-950 pointer-events-auto"
-    ></div>
+    
+    {showPreloader && (
+      <>
+        <!-- 1. BLACK BACKGROUND OVERLAY -->
+        <div
+          id="app-preloader-overlay"
+          class="fixed inset-0 z-50 bg-slate-950 pointer-events-none"
+        ></div>
 
-    <!-- 2. FLOATING PRELOADER CONTENT (z-51) -->
-    <div
-      id="app-preloader-content"
-      class="fixed inset-0 z-[51] pointer-events-none flex flex-col items-center justify-center select-none"
-    >
-      <!-- Floating Logo Wrapper -->
-      <div
-        id="app-preloader-logo-wrapper"
-        class="relative w-64 h-36 flex items-center justify-center filter drop-shadow-[0_0_20px_rgba(208,168,44,0.35)] pointer-events-auto"
-      >
-        <svg
-          id="app-preloader-svg"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="-4 -4 248 140"
-          class="w-full h-full overflow-visible"
+        <!-- 2. FLOATING PRELOADER CONTENT -->
+        <div
+          id="app-preloader-content"
+          class="fixed inset-0 z-[51] pointer-events-none flex flex-col items-center justify-center select-none"
         >
-          <g fill="none" stroke="#d0a82c" stroke-width="6" stroke-linejoin="miter" stroke-linecap="butt">
-            <polygon class="badge-polygon opacity-60" points="66,0 174,0 240,66 174,132 66,132 0,66" />
-            <polyline class="bracket-line opacity-80" points="10,26 -16,66 10,106" />
-            <polyline class="bracket-line opacity-80" points="230,26 256,66 230,106" />
-            <g transform="translate(64,13)">
-              <polyline class="mono-line" points="6,96 6,10 76,10" />
-              <polyline class="mono-line" points="6,46 34,46" />
-              <polyline class="mono-line" points="34,46 46,96 54,62 64,96 76,10" />
-              <polyline class="mono-line" points="76,10 90,54 104,14 104,96" />
-            </g>
-          </g>
-        </svg>
-      </div>
-
-      <!-- Glowing Amber Line & Percentage Counter -->
-      <div id="app-preloader-progress-container" class="mt-6 flex items-center space-x-3.5 w-64 sm:w-72 pointer-events-auto">
-        <div class="flex-1 h-1.5 bg-slate-900 border border-amber-500/30 rounded-full overflow-hidden p-[1px] relative">
           <div
-            id="app-preloader-bar"
-            class="h-full bg-amber-400 rounded-full w-0 shadow-[0_0_12px_#d0a82c] transition-all duration-75"
-          ></div>
+            id="app-preloader-logo-wrapper"
+            class="relative w-64 h-36 flex items-center justify-center filter drop-shadow-[0_0_20px_rgba(208,168,44,0.35)] pointer-events-none"
+          >
+            <svg
+              id="app-preloader-svg"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="-4 -4 248 140"
+              class="w-full h-full overflow-visible pointer-events-none"
+            >
+              <g fill="none" stroke="#d0a82c" stroke-width="6" stroke-linejoin="miter" stroke-linecap="butt">
+                <polygon class="badge-polygon opacity-60" points="66,0 174,0 240,66 174,132 66,132 0,66" />
+                <polyline class="bracket-line opacity-80" points="10,26 -16,66 10,106" />
+                <polyline class="bracket-line opacity-80" points="230,26 256,66 230,106" />
+                <g transform="translate(64,13)">
+                  <polyline class="mono-line" points="6,96 6,10 76,10" />
+                  <polyline class="mono-line" points="6,46 34,46" />
+                  <polyline class="mono-line" points="34,46 46,96 54,62 64,96 76,10" />
+                  <polyline class="mono-line" points="76,10 90,54 104,14 104,96" />
+                </g>
+              </g>
+            </svg>
+          </div>
+
+          <div id="app-preloader-progress-container" class="mt-6 flex items-center space-x-3.5 w-64 sm:w-72 pointer-events-none">
+            <div class="flex-1 h-1.5 bg-slate-900 border border-amber-500/30 rounded-full overflow-hidden p-[1px] relative pointer-events-none">
+              <div
+                id="app-preloader-bar"
+                class="h-full bg-amber-400 rounded-full w-0 shadow-[0_0_12px_#d0a82c] transition-all duration-75 pointer-events-none"
+              ></div>
+            </div>
+            <span
+              id="app-preloader-percent"
+              class="font-mono text-xs text-amber-400 font-bold tracking-wider min-w-[38px] text-right pointer-events-none"
+            >
+              0%
+            </span>
+          </div>
         </div>
-        <span
-          id="app-preloader-percent"
-          class="font-mono text-xs text-amber-400 font-bold tracking-wider min-w-[38px] text-right"
-        >
-          0%
-        </span>
-      </div>
-    </div>
 
-    <!-- PRELOADER CONTROLLER -->
-    <script>
-      import gsap from 'gsap';
+        <script>
+          import gsap from 'gsap';
 
-      document.addEventListener('DOMContentLoaded', () => {
-        const overlay = document.getElementById('app-preloader-overlay');
-        const contentContainer = document.getElementById('app-preloader-content');
-        const logoWrapper = document.getElementById('app-preloader-logo-wrapper');
-        const progressContainer = document.getElementById('app-preloader-progress-container');
-        const bar = document.getElementById('app-preloader-bar');
-        const percentText = document.getElementById('app-preloader-percent');
-        const svg = document.getElementById('app-preloader-svg');
+          const runPreloaderAnimation = () => {
+            const overlay = document.getElementById('app-preloader-overlay');
+            const contentContainer = document.getElementById('app-preloader-content');
+            const logoWrapper = document.getElementById('app-preloader-logo-wrapper');
+            const progressContainer = document.getElementById('app-preloader-progress-container');
+            const bar = document.getElementById('app-preloader-bar');
+            const percentText = document.getElementById('app-preloader-percent');
+            const svg = document.getElementById('app-preloader-svg');
 
-        if (!overlay || !contentContainer || !logoWrapper || !progressContainer || !bar || !percentText || !svg) return;
+            if (!overlay || !contentContainer || !logoWrapper || !progressContainer || !bar || !percentText || !svg) return;
 
-        // 1. Measure SVG path lengths for real-time progress drawing
-        const paths = svg.querySelectorAll('polyline, polygon');
-        const pathData: { el: SVGGeometryElement; length: number }[] = [];
+            // Ensure preloader NEVER blocks pointer events
+            overlay.style.pointerEvents = 'none';
+            contentContainer.style.pointerEvents = 'none';
+            logoWrapper.style.pointerEvents = 'none';
+            progressContainer.style.pointerEvents = 'none';
 
-        paths.forEach((path) => {
-          const p = path as SVGGeometryElement;
-          const length = p.getTotalLength ? p.getTotalLength() : 400;
-          p.style.strokeDasharray = `${length}`;
-          p.style.strokeDashoffset = `${length}`;
-          pathData.push({ el: p, length });
-        });
+            const paths = svg.querySelectorAll('polyline, polygon');
+            const pathData: { el: SVGGeometryElement; length: number }[] = [];
 
-        let targetProgress = 15;
-        let currentProgress = 0;
-        let isCompleted = false;
-
-        const addProgress = (amount: number) => {
-          targetProgress = Math.min(100, targetProgress + amount);
-        };
-
-        // Track Fonts
-        if (document.fonts) {
-          document.fonts.ready.then(() => addProgress(25)).catch(() => addProgress(25));
-        } else {
-          addProgress(25);
-        }
-
-        // Track Images & Key SVGs
-        const keyAssets = ['/logo.svg', '/logo-brackets.svg', '/logo-mono.svg', '/install-fwm.sh'];
-        let loadedAssets = 0;
-        keyAssets.forEach((url) => {
-          const img = new Image();
-          img.onload = img.onerror = () => {
-            loadedAssets++;
-            if (loadedAssets === keyAssets.length) {
-              addProgress(30);
-            }
-          };
-          img.src = url;
-        });
-
-        // Track Window Load
-        if (document.readyState === 'complete') {
-          targetProgress = 100;
-        } else {
-          window.addEventListener('load', () => {
-            targetProgress = 100;
-          }, { once: true });
-        }
-
-        // Perform Docking Animation when 100% complete
-        const performDocking = () => {
-          const targetSlot = document.getElementById('navbar-logo-slot');
-          const navContainer = document.getElementById('navbar-container');
-
-          // Fade out progress bar & line
-          gsap.to(progressContainer, {
-            opacity: 0,
-            y: 10,
-            duration: 0.3,
-          });
-
-          // Fade out black background overlay
-          gsap.to(overlay, {
-            opacity: 0,
-            duration: 0.6,
-            onComplete: () => {
-              overlay.style.display = 'none';
-            },
-          });
-
-          // Fade in Navbar
-          if (navContainer) {
-            gsap.to(navContainer, {
-              opacity: 1,
-              duration: 0.5,
-              delay: 0.1,
+            paths.forEach((path) => {
+              const p = path as SVGGeometryElement;
+              const length = p.getTotalLength ? p.getTotalLength() : 400;
+              p.style.strokeDasharray = `${length}`;
+              p.style.strokeDashoffset = `${length}`;
+              pathData.push({ el: p, length });
             });
-          }
 
-          // Dock Logo into Navbar Slot with Pixel-Perfect Scale Calculation
-          if (targetSlot && logoWrapper && svg) {
-            const targetRect = targetSlot.getBoundingClientRect();
-            const logoRect = logoWrapper.getBoundingClientRect();
+            let targetProgress = 15;
+            let currentProgress = 0;
+            let isCompleted = false;
 
-            // Calculate exact target rendered width inside the slot (SVG viewBox: 248 x 140)
-            const svgAR = 248 / 140;
-            const slotAR = targetRect.width / targetRect.height;
+            // --- REAL ASSET LOAD TRACKING ---
+            let totalAssets = 1;
+            let loadedAssets = 0;
 
-            let finalWidth: number;
-            if (slotAR > svgAR) {
-              finalWidth = targetRect.height * svgAR;
+            const incrementProgress = () => {
+              loadedAssets++;
+              const calculated = Math.floor((loadedAssets / totalAssets) * 100);
+              targetProgress = Math.max(targetProgress, Math.min(100, calculated));
+            };
+
+            const images = Array.from(document.querySelectorAll('img'));
+            totalAssets += images.length;
+
+            images.forEach((img) => {
+              if (img.complete) {
+                incrementProgress();
+              } else {
+                img.addEventListener('load', incrementProgress, { once: true });
+                img.addEventListener('error', incrementProgress, { once: true });
+              }
+            });
+
+            if (document.fonts) {
+              document.fonts.ready.then(incrementProgress).catch(incrementProgress);
             } else {
-              finalWidth = targetRect.width;
+              incrementProgress();
             }
 
-            // Calculate exact scale factor needed so there is ZERO size snap
-            const exactScale = finalWidth / logoRect.width;
+            if (document.readyState === 'complete') {
+              targetProgress = 100;
+            } else {
+              window.addEventListener('load', () => { targetProgress = 100; }, { once: true });
+              // Safety Fallback: Cap wait time to 1.2s max
+              setTimeout(() => { targetProgress = 100; }, 1200);
+            }
 
-            const deltaX = targetRect.left + targetRect.width / 2 - (logoRect.left + logoRect.width / 2);
-            const deltaY = targetRect.top + targetRect.height / 2 - (logoRect.top + logoRect.height / 2);
+            // Auto-advance safety tick so bar never freezes at 0%
+            const safetyInterval = setInterval(() => {
+              if (targetProgress < 90) {
+                targetProgress += 15;
+              } else {
+                clearInterval(safetyInterval);
+              }
+            }, 180);
 
-            gsap.to(logoWrapper, {
-              x: deltaX,
-              y: deltaY,
-              scale: exactScale,
-              duration: 1.2,
-              ease: 'elastic.out(1, 0.75)',
-              onComplete: () => {
-                // Seamless handover directly inside navbar-logo-slot
-                svg.style.width = '100%';
-                svg.style.height = '100%';
-                targetSlot.appendChild(svg);
-                contentContainer.style.display = 'none';
-              },
-            });
-          }
-        };
+            // --- DOCKING HANDOVER ---
+            const performDocking = () => {
+              clearInterval(safetyInterval);
+              const targetSlot = document.getElementById('navbar-logo-slot');
+              const navContainer = document.getElementById('navbar-container');
 
-        // Smooth Interpolator Ticker
-        const tickerCallback = () => {
-          if (isCompleted) return;
+              contentContainer.style.display = 'none';
 
-          currentProgress += (targetProgress - currentProgress) * 0.12;
+              gsap.to(progressContainer, { opacity: 0, y: 10, duration: 0.2 });
 
-          if (Math.abs(targetProgress - currentProgress) < 0.2 && targetProgress >= 100) {
-            currentProgress = 100;
-          }
+              gsap.to(overlay, {
+                opacity: 0,
+                duration: 0.5,
+                onComplete: () => {
+                  overlay.style.display = 'none';
+                },
+              });
 
-          const displayPct = Math.floor(currentProgress);
+              if (navContainer) {
+                gsap.to(navContainer, { opacity: 1, duration: 0.4 });
+              }
 
-          // Update Percentage Text
-          percentText.innerText = `${displayPct}%`;
+              if (targetSlot && logoWrapper) {
+                const targetRect = targetSlot.getBoundingClientRect();
+                const logoRect = logoWrapper.getBoundingClientRect();
 
-          // Update Glowing Amber Line
-          bar.style.width = `${currentProgress}%`;
+                const svgAR = 248 / 140;
+                const slotAR = targetRect.width / targetRect.height;
+                const finalWidth = slotAR > svgAR ? targetRect.height * svgAR : targetRect.width;
+                const exactScale = finalWidth / logoRect.width;
 
-          // Update SVG Path Drawing
-          const ratio = currentProgress / 100;
-          pathData.forEach(({ el, length }) => {
-            el.style.strokeDashoffset = `${length * (1 - ratio)}`;
-          });
+                const deltaX = targetRect.left + targetRect.width / 2 - (logoRect.left + logoRect.width / 2);
+                const deltaY = targetRect.top + targetRect.height / 2 - (logoRect.top + logoRect.height / 2);
 
-          // Trigger Completion
-          if (currentProgress >= 100 && !isCompleted) {
-            isCompleted = true;
-            gsap.ticker.remove(tickerCallback);
-            performDocking();
-          }
-        };
+                gsap.to(logoWrapper, {
+                  x: deltaX,
+                  y: deltaY,
+                  scale: exactScale,
+                  duration: 0.8,
+                  ease: 'power3.inOut',
+                  onComplete: () => {
+                    logoWrapper.style.display = 'none';
+                  },
+                });
+              }
+            };
 
-        gsap.ticker.add(tickerCallback);
-      });
-    </script>
+            const tickerCallback = () => {
+              if (isCompleted) return;
+
+              currentProgress += (targetProgress - currentProgress) * 0.15;
+
+              if (Math.abs(targetProgress - currentProgress) < 0.5 && targetProgress >= 100) {
+                currentProgress = 100;
+              }
+
+              const displayPct = Math.floor(currentProgress);
+              percentText.innerText = `${displayPct}%`;
+              bar.style.width = `${currentProgress}%`;
+
+              const ratio = currentProgress / 100;
+              pathData.forEach(({ el, length }) => {
+                el.style.strokeDashoffset = `${length * (1 - ratio)}`;
+              });
+
+              if (currentProgress >= 100 && !isCompleted) {
+                isCompleted = true;
+                gsap.ticker.remove(tickerCallback);
+                performDocking();
+              }
+            };
+
+            gsap.ticker.add(tickerCallback);
+          };
+
+          document.addEventListener('DOMContentLoaded', runPreloaderAnimation);
+        </script>
+      </>
+    )}
 
     <SmoothScroll client:only="react" />
-    <Navbar client:only="react" />
+    <Navbar isPreloading={showPreloader} client:only="react" />
     <slot />
     <Analytics />
   </body>
