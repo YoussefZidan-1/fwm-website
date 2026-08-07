@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ProximityText } from 'z-proximity-engine';
 
 import { FwmWobble, WOBBLE_GRID } from '../lib/physics/FwmWobble';
 import { playKnockSound } from '../lib/audio/knockSound';
@@ -1092,7 +1093,21 @@ export const PhysicsSection: React.FC = () => {
           <span>Interactive Compositor Sandbox</span>
         </div>
         <h2 className="font-display italic text-3xl sm:text-5xl font-bold text-slate-100">
-          Scroll down to <span className="text-amber-400">taste the physics</span> yourself
+          Scroll down to{' '}
+          <span className="inline-block">
+            <ProximityText
+              text="taste the physics"
+              preset="tiltCard-magnetic-opacity-glow"
+              textClassName="font-display italic font-bold text-amber-400 px-1 cursor-pointer hover:text-amber-300 transition-colors drop-shadow-[0_0_25px_rgba(208,168,44,0.45)]"
+              reach={2}
+              duration={1}
+              opacity={[0.7, 1]}
+              glow={[0, 6]}
+              ease="elastic"
+              splitBy="letter"
+            />
+          </span>{' '}
+          yourself
         </h2>
         <p className="font-body text-slate-400 text-sm sm:text-base max-w-xl mx-auto font-light leading-relaxed">
           Experience fwm's Box2D 3.x rigid body dynamics, corner pendulum torque, swirl spin momentum, 9x9 wobble mesh, and collision knock sound.

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Proximity } from 'z-proximity-engine';
+import { Proximity, ProximityText } from 'z-proximity-engine';
 import { allFeatures } from '../data/features';
 
 export const PhysicsFeatures: React.FC = () => {
@@ -27,7 +27,21 @@ export const PhysicsFeatures: React.FC = () => {
           <span>Feature Index</span>
         </div>
         <h2 className="font-display italic text-4xl sm:text-6xl font-bold text-slate-100">
-          Everything <span className="text-amber-400">fwm</span> Can Do
+          Everything{' '}
+          <span className="inline-block">
+            <ProximityText
+              text="fwm"
+              preset="tiltCard-magnetic-opacity-glow"
+              textClassName="font-display italic font-bold text-amber-400 px-1 cursor-pointer hover:text-amber-300 transition-colors drop-shadow-[0_0_25px_rgba(208,168,44,0.45)]"
+              reach={2}
+              duration={1}
+              opacity={[0.7, 1]}
+              glow={[0, 6]}
+              ease="elastic"
+              splitBy="letter"
+            />
+          </span>{' '}
+          Can Do
         </h2>
         <p className="font-body text-slate-400 text-sm sm:text-base max-w-xl mx-auto font-light">
           Browse features by system architecture, physics engine details, and window management controls.
