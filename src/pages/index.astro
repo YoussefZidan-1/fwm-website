@@ -2,17 +2,20 @@
 import Layout from '../layouts/Layout.astro';
 import { Hero } from '../components/Hero';
 import { FloatingGlassShapes } from '../components/FloatingGlassShapes';
-import { InstallSection } from '../components/InstallSection';
 import { PhysicsSection } from '../components/PhysicsSection';
 import { PhysicsFeatures } from '../components/PhysicsFeatures';
+import { InstallSection } from '../components/InstallSection';
 ---
 
 <Layout title="fwm — Physics Window Manager" showPreloader={true}>
   <main className="relative overflow-hidden">
     <FloatingGlassShapes client:only="react" />
     <Hero client:visible />
-    <InstallSection client:visible />
+    {/* 1. Sandbox immediately after Hero (Show, don't tell!) */}
     <PhysicsSection client:only="react" />
+    {/* 2. Feature Index with Category Tabs */}
     <PhysicsFeatures client:visible />
+    {/* 3. Final Installation Conversion CTA */}
+    <InstallSection client:visible />
   </main>
 </Layout>
