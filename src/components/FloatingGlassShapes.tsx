@@ -16,62 +16,70 @@ export const FloatingGlassShapes: React.FC = () => {
     if (!containerRef.current || !circleRef.current || !squareRef.current || !squircleRef.current) return;
 
     const ctx = gsap.context(() => {
-      // 1. Hardware-accelerated continuous rotation
-      const circleSpin = gsap.to(circleRef.current, { rotation: 360, duration: 20, repeat: -1, ease: 'none' });
-      const squareSpin = gsap.to(squareRef.current, { rotation: -360, duration: 16, repeat: -1, ease: 'none' });
-      const squircleSpin = gsap.to(squircleRef.current, { rotation: 360, duration: 24, repeat: -1, ease: 'none' });
+      // 1. Initial CSS Centering
+      gsap.set([circleRef.current, squareRef.current, squircleRef.current], {
+        xPercent: -50,
+        yPercent: -50,
+        x: '0vw',
+        y: '0vh',
+        scale: 0,
+        opacity: 0,
+      });
 
-      // 2. 120FPS GPU Velocity Tracker (No Tween Spamming!)
+      const circleSpin = gsap.to(circleRef.current, { rotation: 360, duration: 30, repeat: -1, ease: 'none' });
+      const squareSpin = gsap.to(squareRef.current, { rotation: -360, duration: 25, repeat: -1, ease: 'none' });
+      const squircleSpin = gsap.to(squircleRef.current, { rotation: 360, duration: 35, repeat: -1, ease: 'none' });
+
+      // 2. The Welcome Explosion (Fires after preloader docks)
+      const introTl = gsap.timeline({ delay: 0.8 });
+      
+      introTl
+        .to(circleRef.current, { x: '-38vw', y: '-32vh', scale: 1, opacity: 1, duration: 2.5, ease: 'expo.out', overwrite: 'auto' }, 0)
+        .to(squareRef.current, { x: '38vw', y: '-22vh', scale: 1, opacity: 1, duration: 2.5, ease: 'expo.out', overwrite: 'auto' }, 0.1)
+        .to(squircleRef.current, { x: '-28vw', y: '32vh', scale: 1, opacity: 1, duration: 2.5, ease: 'expo.out', overwrite: 'auto' }, 0.2);
+
+      // 3. Viewport-Bounded Motion Timeline
+      const scrollTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: document.body,
+          start: 'top top',
+          end: 'bottom bottom',
+          scrub: 1.5,
+        },
+      });
+
+      // Waypoint 1: Sandbox & Features
+      // ✅ CHANGED: Routed them to the far outer edges (40vw+ / -40vw+) so they stay out from behind the center text!
+      scrollTl.to(circleRef.current, { x: '42vw', y: '25vh', scale: 1.3, ease: 'sine.inOut' }, 0)
+              .to(squareRef.current, { x: '-42vw', y: '10vh', scale: 0.85, ease: 'sine.inOut' }, 0)
+              .to(squircleRef.current, { x: '30vw', y: '-35vh', scale: 1.15, ease: 'sine.inOut' }, 0)
+
+      // Waypoint 2: Installation Section (Framing the Install Card perfectly)
+              .to(circleRef.current, { x: '-36vw', y: '10vh', scale: 1.1, ease: 'sine.inOut' }, 1)
+              .to(squareRef.current, { x: '36vw', y: '-5vh', scale: 1.25, ease: 'sine.inOut' }, 1)
+              .to(squircleRef.current, { x: '-5vw', y: '34vh', scale: 0.9, ease: 'sine.inOut' }, 1);
+
+      // 4. Scroll Velocity Tracker
       let targetVelocity = 0;
       let currentVelocity = 0;
 
-      // Track raw velocity on scroll
       ScrollTrigger.create({
         onUpdate: (self) => {
           targetVelocity = Math.min(Math.abs(self.getVelocity()) / 200, 4);
         },
       });
 
-      // Use GSAP's native ticker for buttery smooth mathematical interpolation
       const tickerCallback = () => {
-        // Smoothly interpolate current velocity towards target
         currentVelocity += (targetVelocity - currentVelocity) * 0.1;
-        // Auto-decay target velocity back to 0
         targetVelocity += (0 - targetVelocity) * 0.05;
 
-        // Apply timescale directly (Zero garbage collection overhead)
         const timeScale = 1 + currentVelocity;
         circleSpin.timeScale(timeScale);
         squareSpin.timeScale(timeScale);
         squircleSpin.timeScale(timeScale);
-
-        // Optional: High-performance opacity glow based on velocity
-        if (circleRef.current) {
-          circleRef.current.style.opacity = `${0.8 + currentVelocity * 0.05}`;
-        }
       };
 
       gsap.ticker.add(tickerCallback);
-
-      // 3. Viewport-Bounded Motion Timeline (ONLY transform properties, NO zIndex/filters)
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: document.body,
-          start: 'top top',
-          end: 'bottom bottom',
-          scrub: 1.2,
-        },
-      });
-
-      // Waypoint 1: Installation Section
-      tl.to(circleRef.current, { x: '35vw', y: '35vh', scale: 1.15, ease: 'power2.inOut' }, 0)
-        .to(squareRef.current, { x: '-15vw', y: '30vh', scale: 0.95, ease: 'power2.inOut' }, 0)
-        .to(squircleRef.current, { x: '15vw', y: '-25vh', scale: 1.05, ease: 'power2.inOut' }, 0)
-
-      // Waypoint 2: Features Section
-        .to(circleRef.current, { x: '75vw', y: '65vh', scale: 0.85, ease: 'power2.inOut' }, 1)
-        .to(squareRef.current, { x: '-75vw', y: '55vh', scale: 1.2, ease: 'power2.inOut' }, 1)
-        .to(squircleRef.current, { x: '55vw', y: '10vh', scale: 0.9, ease: 'power2.inOut' }, 1);
 
       return () => {
         gsap.ticker.remove(tickerCallback);
@@ -82,26 +90,29 @@ export const FloatingGlassShapes: React.FC = () => {
   }, []);
 
   return (
+    // ✅ CHANGED: Put firmly in the background (z-0)
     <div ref={containerRef} className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-      {/* 1. Circle (Static z-20 so it always floats over, GPU optimized borders and shadows) */}
+      
+      {/* 1. Circle (Ambient glowing wireframe) */}
       <div
         ref={circleRef}
-        className="absolute top-[10%] left-[5%] z-20 w-28 h-28 sm:w-44 sm:h-44 rounded-full bg-amber-500/10 border border-amber-400/40 shadow-[0_0_25px_rgba(208,168,44,0.15)] flex items-center justify-center opacity-80 will-change-transform transform-gpu"
+        className="absolute top-1/2 left-1/2 w-32 h-32 sm:w-48 sm:h-48 rounded-full bg-amber-500/10 border border-amber-400/30 shadow-[0_0_60px_rgba(208,168,44,0.15)] flex items-center justify-center will-change-transform transform-gpu opacity-0"
       >
-        <div className="w-1/2 h-1/2 rounded-full border border-amber-300/30 bg-amber-400/10" />
+        <div className="w-1/2 h-1/2 rounded-full border border-amber-400/30 bg-amber-400/5 shadow-[inset_0_0_20px_rgba(208,168,44,0.2)]" />
       </div>
 
-      {/* 2. Square (Static z-0 behind content) */}
+      {/* 2. Square (Dark ambient body) */}
       <div
         ref={squareRef}
-        className="absolute top-[15%] right-[5%] z-0 w-24 h-24 sm:w-36 sm:h-36 bg-slate-900/60 border border-amber-500/30 shadow-[0_0_20px_rgba(208,168,44,0.1)] opacity-70 will-change-transform transform-gpu"
+        className="absolute top-1/2 left-1/2 w-28 h-28 sm:w-40 sm:h-40 bg-slate-900/60 border border-amber-500/20 shadow-[0_0_50px_rgba(208,168,44,0.1)] will-change-transform transform-gpu opacity-0"
       />
 
-      {/* 3. Curved Square / Squircle (Static z-0 behind content) */}
+      {/* 3. Curved Square / Squircle (Bright ambient glow) */}
       <div
         ref={squircleRef}
-        className="absolute top-[70%] left-[5%] z-0 w-32 h-32 sm:w-48 sm:h-48 rounded-3xl bg-amber-400/10 border border-amber-400/30 shadow-[0_0_30px_rgba(208,168,44,0.15)] opacity-75 will-change-transform transform-gpu"
+        className="absolute top-1/2 left-1/2 w-36 h-36 sm:w-52 sm:h-52 rounded-[2rem] bg-amber-400/10 border border-amber-400/25 shadow-[0_0_70px_rgba(208,168,44,0.15)] will-change-transform transform-gpu opacity-0"
       />
+      
     </div>
   );
 };
