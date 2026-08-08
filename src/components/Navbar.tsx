@@ -1,10 +1,6 @@
 import React from 'react';
 
-interface NavbarProps {
-  isPreloading?: boolean;
-}
-
-export const Navbar: React.FC<NavbarProps> = ({ isPreloading = false }) => {
+export const Navbar: React.FC = () => {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.includes('#')) {
       const hash = href.substring(href.indexOf('#'));
@@ -29,7 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isPreloading = false }) => {
     <header className="fixed top-3 sm:top-4 left-0 right-0 z-40 flex justify-center px-2 sm:px-4 pointer-events-none">
       <div
         id="navbar-container"
-        className={`${isPreloading ? 'opacity-0' : 'opacity-100'} pointer-events-auto p-[1px] bg-gradient-to-r from-amber-500/40 via-amber-400/80 to-amber-500/40 shadow-[0_0_25px_rgba(208,168,44,0.2)] transition-all duration-300 w-full max-w-[720px]`}
+        className="pointer-events-auto p-[1px] bg-gradient-to-r from-amber-500/40 via-amber-400/80 to-amber-500/40 shadow-[0_0_25px_rgba(208,168,44,0.2)] transition-opacity duration-300 w-full max-w-[720px]"
         style={{
           clipPath: 'polygon(16px 0%, calc(100% - 16px) 0%, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0% 50%)',
         }}
@@ -51,6 +47,7 @@ export const Navbar: React.FC<NavbarProps> = ({ isPreloading = false }) => {
               className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shrink-0 relative"
             >
               <svg
+                id="navbar-logo-svg"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="-4 -4 248 140"
                 className="w-full h-full object-contain pointer-events-none"
@@ -72,8 +69,8 @@ export const Navbar: React.FC<NavbarProps> = ({ isPreloading = false }) => {
 
           <div className="flex items-center space-x-1 sm:space-x-2">
             {[
-              { name: 'Features', href: '/#features' },
               { name: 'Physics', href: '/#physics' },
+              { name: 'Features', href: '/#features' },
               { name: 'Docs', href: '/docs' },
             ].map((link) => (
               <a

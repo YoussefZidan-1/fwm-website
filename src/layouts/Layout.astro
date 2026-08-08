@@ -30,36 +30,20 @@ const {
 
     <ClientRouter />
 
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@1,400..900&display=swap" rel="stylesheet">
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden">
+  
+  <body class={`bg-slate-950 text-slate-100 antialiased selection:bg-amber-500 selection:text-slate-950 overflow-x-hidden ${showPreloader ? 'is-preloading' : ''}`}>
     
     {showPreloader && (
       <>
-        <!-- 1. BLACK BACKGROUND OVERLAY -->
-        <div
-          id="app-preloader-overlay"
-          class="fixed inset-0 z-50 bg-slate-950 pointer-events-none"
-        ></div>
+        <div id="app-preloader-overlay" class="fixed inset-0 z-50 bg-slate-950 pointer-events-none"></div>
 
-        <!-- 2. FLOATING PRELOADER CONTENT -->
-        <div
-          id="app-preloader-content"
-          class="fixed inset-0 z-[51] pointer-events-none flex flex-col items-center justify-center select-none"
-        >
-          <div
-            id="app-preloader-logo-wrapper"
-            class="relative w-64 h-36 flex items-center justify-center filter drop-shadow-[0_0_20px_rgba(208,168,44,0.35)] pointer-events-none"
-          >
-            <svg
-              id="app-preloader-svg"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="-4 -4 248 140"
-              class="w-full h-full overflow-visible pointer-events-none"
-            >
+        <div id="app-preloader-content" class="fixed inset-0 z-[51] pointer-events-none flex flex-col items-center justify-center select-none">
+          <div id="app-preloader-logo-wrapper" class="relative w-64 h-36 flex items-center justify-center filter drop-shadow-[0_0_20px_rgba(208,168,44,0.35)] pointer-events-none will-change-transform">
+            <svg id="app-preloader-svg" xmlns="http://www.w3.org/2000/svg" viewBox="-4 -4 248 140" class="w-full h-full overflow-visible pointer-events-none">
               <g fill="none" stroke="#d0a82c" stroke-width="6" stroke-linejoin="miter" stroke-linecap="butt">
                 <polygon class="badge-polygon opacity-60" points="66,0 174,0 240,66 174,132 66,132 0,66" />
                 <polyline class="bracket-line opacity-80" points="10,26 -16,66 10,106" />
@@ -74,58 +58,70 @@ const {
             </svg>
           </div>
 
-          <div id="app-preloader-progress-container" class="mt-6 flex items-center space-x-3.5 w-64 sm:w-72 pointer-events-none">
-            <div class="flex-1 h-1.5 bg-slate-900 border border-amber-500/30 rounded-full overflow-hidden p-[1px] relative pointer-events-none">
-              <div
-                id="app-preloader-bar"
-                class="h-full bg-amber-400 rounded-full w-0 shadow-[0_0_12px_#d0a82c] transition-all duration-75 pointer-events-none"
-              ></div>
+          <div id="app-preloader-progress-container" class="mt-6 flex flex-col items-center w-64 sm:w-72 pointer-events-none">
+            <div class="flex items-center space-x-3.5 w-full">
+              <div class="flex-1 h-1.5 bg-slate-900 border border-amber-500/30 rounded-full overflow-hidden p-[1px] relative">
+                <div id="app-preloader-bar" class="h-full bg-amber-400 rounded-full w-0 shadow-[0_0_12px_#d0a82c]"></div>
+              </div>
+              <span id="app-preloader-percent" class="font-mono text-xs text-amber-400 font-bold tracking-wider min-w-[38px] text-right">0%</span>
             </div>
-            <span
-              id="app-preloader-percent"
-              class="font-mono text-xs text-amber-400 font-bold tracking-wider min-w-[38px] text-right pointer-events-none"
-            >
-              0%
-            </span>
+            {/* LIVE LOADING LOGS */}
+            <div id="app-preloader-log" class="mt-3 font-mono text-[9px] text-slate-500 uppercase tracking-widest h-4">
+              [sys] Initializing session...
+            </div>
           </div>
         </div>
 
         <script>
           import gsap from 'gsap';
-        
+
           const runPreloaderAnimation = () => {
-            const overlay = document.getElementById('app-preloader-overlay');
-            const contentContainer = document.getElementById('app-preloader-content');
-            const logoWrapper = document.getElementById('app-preloader-logo-wrapper');
-            const progressContainer = document.getElementById('app-preloader-progress-container');
-            const bar = document.getElementById('app-preloader-bar');
-            const percentText = document.getElementById('app-preloader-percent');
-            const svg = document.getElementById('app-preloader-svg');
-        
-            if (!overlay || !contentContainer || !logoWrapper || !progressContainer || !bar || !percentText || !svg) return;
-        
-            // 1. IF ALREADY PRELOADED IN THIS SESSION (e.g. Navigating back from /docs), BYPASS IMMEDIATELY!
+            // Bypass if already loaded in this session
             if (sessionStorage.getItem('fwm_preloaded') === 'true') {
-              overlay.style.display = 'none';
-              contentContainer.style.display = 'none';
-              logoWrapper.style.display = 'none';
-              progressContainer.style.display = 'none';
-              const navContainer = document.getElementById('navbar-container');
-              if (navContainer) {
-                navContainer.style.opacity = '1';
-              }
+              document.body.classList.remove('is-preloading');
+              const overlay = document.getElementById('app-preloader-overlay');
+              const content = document.getElementById('app-preloader-content');
+              if (overlay) overlay.style.display = 'none';
+              if (content) content.style.display = 'none';
               return;
             }
-        
-            // Ensure preloader NEVER blocks pointer events
-            overlay.style.pointerEvents = 'none';
-            contentContainer.style.pointerEvents = 'none';
-            logoWrapper.style.pointerEvents = 'none';
-            progressContainer.style.pointerEvents = 'none';
-        
-            const paths = svg.querySelectorAll('polyline, polygon');
+
+            const startTime = Date.now();
+            let targetProgress = 5; 
+            let currentProgress = 0;
+            let isCompleted = false;
+
+            const logEl = document.getElementById('app-preloader-log');
+            const updateLog = (msg: string) => {
+              if (logEl && logEl.innerText !== msg) logEl.innerText = msg;
+            };
+
+            let isBrowserLoaded = document.readyState === 'complete';
+            if (!isBrowserLoaded) {
+              updateLog('[sys] Resolving DOM tree...');
+              document.addEventListener('readystatechange', () => {
+                if (document.readyState === 'interactive') updateLog('[sys] Mapping layout buffers...');
+                if (document.readyState === 'complete') {
+                  isBrowserLoaded = true;
+                  updateLog('[ok] Layout environment ready.');
+                }
+              });
+              window.addEventListener('load', () => { isBrowserLoaded = true; });
+            } else {
+              updateLog('[ok] Environment cached.');
+            }
+
+            if (document.fonts) {
+              document.fonts.ready.then(() => { 
+                targetProgress = Math.max(targetProgress, 60); 
+                if (!isBrowserLoaded) updateLog('[sys] Typography loaded, awaiting window...');
+              });
+            }
+
+            const svg = document.getElementById('app-preloader-svg');
+            const paths = svg?.querySelectorAll('polyline, polygon') || [];
             const pathData: { el: SVGGeometryElement; length: number }[] = [];
-        
+
             paths.forEach((path) => {
               const p = path as SVGGeometryElement;
               const length = p.getTotalLength ? p.getTotalLength() : 400;
@@ -133,133 +129,108 @@ const {
               p.style.strokeDashoffset = `${length}`;
               pathData.push({ el: p, length });
             });
-        
-            let targetProgress = 15;
-            let currentProgress = 0;
-            let isCompleted = false;
-        
-            // --- REAL ASSET LOAD TRACKING ---
-            let totalAssets = 1;
-            let loadedAssets = 0;
-        
-            const incrementProgress = () => {
-              loadedAssets++;
-              const calculated = Math.floor((loadedAssets / totalAssets) * 100);
-              targetProgress = Math.max(targetProgress, Math.min(100, calculated));
-            };
-        
-            const images = Array.from(document.querySelectorAll('img'));
-            totalAssets += images.length;
-        
-            images.forEach((img) => {
-              if (img.complete) {
-                incrementProgress();
-              } else {
-                img.addEventListener('load', incrementProgress, { once: true });
-                img.addEventListener('error', incrementProgress, { once: true });
-              }
-            });
-        
-            if (document.fonts) {
-              document.fonts.ready.then(incrementProgress).catch(incrementProgress);
-            } else {
-              incrementProgress();
-            }
-        
-            if (document.readyState === 'complete') {
-              targetProgress = 100;
-            } else {
-              window.addEventListener('load', () => { targetProgress = 100; }, { once: true });
-              setTimeout(() => { targetProgress = 100; }, 1200);
-            }
-        
-            const safetyInterval = setInterval(() => {
-              if (targetProgress < 90) {
-                targetProgress += 15;
-              } else {
-                clearInterval(safetyInterval);
-              }
-            }, 180);
-        
+
             const performDocking = () => {
-              clearInterval(safetyInterval);
-              
-              // 2. MARK SESSION AS PRELOADED
               sessionStorage.setItem('fwm_preloaded', 'true');
-        
+              updateLog('[sys] Handshake initialized...');
+
+              const sourceSvg = document.getElementById('app-preloader-svg');
               const targetSlot = document.getElementById('navbar-logo-slot');
               const navContainer = document.getElementById('navbar-container');
-        
-              contentContainer.style.display = 'none';
-        
-              gsap.to(progressContainer, { opacity: 0, y: 10, duration: 0.2 });
-        
-              gsap.to(overlay, {
-                opacity: 0,
-                duration: 0.5,
-                onComplete: () => {
-                  overlay.style.display = 'none';
-                },
-              });
-        
+              const targetSvg = document.getElementById('navbar-logo-svg');
+              const overlay = document.getElementById('app-preloader-overlay');
+
+              // 1. Fade out UI components
+              gsap.to('#app-preloader-progress-container', { opacity: 0, y: 10, duration: 0.3 });
+              if (overlay) gsap.to(overlay, { opacity: 0, duration: 0.6, onComplete: () => overlay.style.display = 'none' });
+
+              // 2. Lock Opacity manually to prevent flashing BEFORE removing the CSS lock
               if (navContainer) {
-                gsap.to(navContainer, { opacity: 1, duration: 0.4 });
+                navContainer.style.opacity = '0';
+                navContainer.style.visibility = 'visible';
               }
-        
-              if (targetSlot && logoWrapper) {
-                const targetRect = targetSlot.getBoundingClientRect();
-                const logoRect = logoWrapper.getBoundingClientRect();
-        
-                const svgAR = 248 / 140;
-                const slotAR = targetRect.width / targetRect.height;
-                const finalWidth = slotAR > svgAR ? targetRect.height * svgAR : targetRect.width;
-                const exactScale = finalWidth / logoRect.width;
-        
-                const deltaX = targetRect.left + targetRect.width / 2 - (logoRect.left + logoRect.width / 2);
-                const deltaY = targetRect.top + targetRect.height / 2 - (logoRect.top + logoRect.height / 2);
-        
-                gsap.to(logoWrapper, {
-                  x: deltaX,
-                  y: deltaY,
-                  scale: exactScale,
-                  duration: 0.8,
-                  ease: 'power3.inOut',
-                  onComplete: () => {
-                    logoWrapper.style.display = 'none';
-                  },
-                });
+              if (targetSvg) {
+                targetSvg.style.opacity = '0';
               }
+
+              // Remove Global CSS lock
+              document.body.classList.remove('is-preloading');
+
+              // 3. One frame delay to guarantee layout is painted before calculating sizes
+              requestAnimationFrame(() => {
+                if (sourceSvg && targetSlot) {
+                  gsap.set(sourceSvg, { transformOrigin: 'center center' });
+                  
+                  // Use the target layout SLOT directly for perfect math
+                  const sourceRect = sourceSvg.getBoundingClientRect();
+                  const targetRect = targetSlot.getBoundingClientRect();
+
+                  // Match aspect ratio exactly to the slot
+                  const svgAR = 248 / 140;
+                  const slotAR = targetRect.width / targetRect.height;
+                  const finalWidth = slotAR > svgAR ? targetRect.height * svgAR : targetRect.width;
+                  const scale = finalWidth / sourceRect.width;
+
+                  const deltaX = (targetRect.left + targetRect.width / 2) - (sourceRect.left + sourceRect.width / 2);
+                  const deltaY = (targetRect.top + targetRect.height / 2) - (sourceRect.top + sourceRect.height / 2);
+
+                  // Reveal navbar wrapper
+                  if (navContainer) gsap.to(navContainer, { opacity: 1, duration: 0.4, delay: 0.1 });
+
+                  // Smooth Swoop Animation (Removed Elastic, Added smooth Expo)
+                  gsap.to(sourceSvg, {
+                    x: deltaX,
+                    y: deltaY,
+                    scale: scale,
+                    duration: 1.0,
+                    ease: 'expo.inOut',
+                    onComplete: () => {
+                      // Seamless Handover! 
+                      // ⚠️ Note: We set opacity directly instead of clearProps: 'all' to protect your clip-path!
+                      if (targetSvg) gsap.set(targetSvg, { opacity: 1 });
+                      if (navContainer) gsap.set(navContainer, { clearProps: 'visibility' }); 
+                      
+                      const content = document.getElementById('app-preloader-content');
+                      if (content) content.style.display = 'none';
+                    }
+                  });
+                }
+              });
             };
-        
+
             const tickerCallback = () => {
               if (isCompleted) return;
-        
-              currentProgress += (targetProgress - currentProgress) * 0.15;
-        
-              if (Math.abs(targetProgress - currentProgress) < 0.5 && targetProgress >= 100) {
-                currentProgress = 100;
+
+              if (isBrowserLoaded) {
+                targetProgress = 100;
+              } else if (targetProgress < 90) {
+                targetProgress += 0.15;
               }
-        
-              const displayPct = Math.floor(currentProgress);
-              percentText.innerText = `${displayPct}%`;
-              bar.style.width = `${currentProgress}%`;
-        
+
+              currentProgress += (targetProgress - currentProgress) * 0.1;
+              const displayPct = Math.min(100, Math.floor(currentProgress));
+
+              const percentText = document.getElementById('app-preloader-percent');
+              const bar = document.getElementById('app-preloader-bar');
+              if (percentText) percentText.innerText = `${displayPct}%`;
+              if (bar) bar.style.width = `${currentProgress}%`;
+
               const ratio = currentProgress / 100;
               pathData.forEach(({ el, length }) => {
                 el.style.strokeDashoffset = `${length * (1 - ratio)}`;
               });
-        
-              if (currentProgress >= 100 && !isCompleted) {
+
+              if (currentProgress > 99.5 && isBrowserLoaded && (Date.now() - startTime > 1200)) {
                 isCompleted = true;
+                updateLog('[sys] Launching compositor...');
                 gsap.ticker.remove(tickerCallback);
                 performDocking();
               }
             };
-        
+
             gsap.ticker.add(tickerCallback);
           };
-        
-          // 3. LISTEN TO BOTH DOMContentLoaded AND ASTRO'S CLIENT ROUTER PAGE LOAD
+
           document.addEventListener('DOMContentLoaded', runPreloaderAnimation);
           document.addEventListener('astro:page-load', runPreloaderAnimation);
         </script>
@@ -267,7 +238,7 @@ const {
     )}
 
     <SmoothScroll client:only="react" />
-    <Navbar isPreloading={showPreloader} client:only="react" />
+    <Navbar client:load />
     <slot />
     <Analytics />
   </body>
