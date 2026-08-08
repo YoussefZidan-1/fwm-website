@@ -206,99 +206,99 @@ export const PhysicsSection: React.FC = () => {
   }, []);
 
   // Tight GSAP ScrollTrigger Sequence — No Dead White Space
-  useEffect(() => {
-    if (
-      !sectionRef.current ||
-      !desktopRef.current ||
-      !textStep1Ref.current ||
-      !textStep2Ref.current ||
-      !instructionRef.current
-    )
-      return;
-
-    const isMobile = window.innerWidth < 768;
-
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top top',
-          end: '+=1800',
-          scrub: 0.6,
-          pin: true,
-          onUpdate: (self) => {
-            if (progressBarRef.current) {
-              const progressPct = Math.min(100, Math.max(0, self.progress * 100));
-              progressBarRef.current.style.width = `${progressPct}%`;
-            }
+    useEffect(() => {
+      if (
+        !sectionRef.current ||
+        !desktopRef.current ||
+        !textStep1Ref.current ||
+        !textStep2Ref.current ||
+        !instructionRef.current
+      )
+        return;
+  
+      const isMobile = window.innerWidth < 768;
+  
+      const ctx = gsap.context(() => {
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: 'top top',
+            end: '+=1200', // 📉 REDUCED from 1800 to eliminate dead scroll space!
+            scrub: 0.6,
+            pin: true,
+            onUpdate: (self) => {
+              if (progressBarRef.current) {
+                const progressPct = Math.min(100, Math.max(0, self.progress * 100));
+                progressBarRef.current.style.width = `${progressPct}%`;
+              }
+            },
           },
-        },
-      });
-
-      // Stage 1: Expand to full view
-      tl.to(desktopRef.current, {
-        width: '88vw',
-        height: '80vh',
-        x: 0,
-        y: 0,
-        borderRadius: '0px',
-        borderColor: 'rgba(245, 158, 11, 0.5)',
-        duration: 0.8,
-        ease: 'power2.inOut',
-      })
-        .to(instructionRef.current, { opacity: 1, duration: 0.3 }, '-=0.3')
-        .to({}, { duration: 0.6 })
-        .to(instructionRef.current, { opacity: 0, duration: 0.3 });
-
-      // Stage 2: Move WM Window to the RIGHT & Fade in Text Step 1 on the LEFT
-      if (isMobile) {
+        });
+  
+        // Stage 1: Expand to full view
         tl.to(desktopRef.current, {
-          height: '42vh',
-          y: '-18vh',
+          width: '88vw',
+          height: '80vh',
           x: 0,
-          duration: 1,
-          ease: 'power2.inOut',
-        }).fromTo(
-          textStep1Ref.current,
-          { opacity: 0, y: 25 },
-          { opacity: 1, y: '10vh', duration: 1, ease: 'power2.out' },
-          '<'
-        );
-      } else {
-        tl.to(desktopRef.current, {
-          width: '46vw',
-          height: '66vh',
-          x: '20vw',
           y: 0,
-          duration: 1,
+          borderRadius: '0px',
+          borderColor: 'rgba(245, 158, 11, 0.5)',
+          duration: 0.8,
           ease: 'power2.inOut',
+        })
+          .to(instructionRef.current, { opacity: 1, duration: 0.3 }, '-=0.3')
+          .to({}, { duration: 0.3 }) // 📉 Reduced hold time
+          .to(instructionRef.current, { opacity: 0, duration: 0.3 });
+  
+        // Stage 2: Move WM Window to the RIGHT & Fade in Text Step 1 on the LEFT
+        if (isMobile) {
+          tl.to(desktopRef.current, {
+            height: '42vh',
+            y: '-18vh',
+            x: 0,
+            duration: 1,
+            ease: 'power2.inOut',
+          }).fromTo(
+            textStep1Ref.current,
+            { opacity: 0, y: 25 },
+            { opacity: 1, y: '10vh', duration: 1, ease: 'power2.out' },
+            '<'
+          );
+        } else {
+          tl.to(desktopRef.current, {
+            width: '46vw',
+            height: '66vh',
+            x: '20vw',
+            y: 0,
+            duration: 1,
+            ease: 'power2.inOut',
+          }).fromTo(
+            textStep1Ref.current,
+            { opacity: 0, y: 30 },
+            { opacity: 1, y: 0, duration: 1, ease: 'power2.out' },
+            '<'
+          );
+        }
+  
+        tl.to({}, { duration: 0.4 }); // 📉 Reduced hold time
+  
+        // Stage 3: Step 1 Out, Step 2 In
+        tl.to(textStep1Ref.current, {
+          opacity: 0,
+          y: -25,
+          duration: 0.6,
+          ease: 'power2.in',
         }).fromTo(
-          textStep1Ref.current,
-          { opacity: 0, y: 30 },
-          { opacity: 1, y: 0, duration: 1, ease: 'power2.out' },
-          '<'
+          textStep2Ref.current,
+          { opacity: 0, y: 25 },
+          { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }
         );
-      }
-
-      tl.to({}, { duration: 1 }); // Hold Step 1
-
-      // Stage 3: Step 1 Out, Step 2 In
-      tl.to(textStep1Ref.current, {
-        opacity: 0,
-        y: -25,
-        duration: 0.6,
-        ease: 'power2.in',
-      }).fromTo(
-        textStep2Ref.current,
-        { opacity: 0, y: 25 },
-        { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }
-      );
-
-      tl.to({}, { duration: 1 }); // Hold Step 2 through section unpin
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, []);
+  
+        tl.to({}, { duration: 0.4 }); // 📉 Reduced hold time before unpinning
+      }, sectionRef);
+  
+      return () => ctx.revert();
+    }, []);
 
   // Spawn extra window on demand
   const spawnWindow = () => {
@@ -1088,7 +1088,7 @@ export const PhysicsSection: React.FC = () => {
 
   return (
     <>
-    <div className="bg-slate-950 py-12 px-4 text-center space-y-4 z-10 relative border-b border-slate-800/60">
+    <div className="py-12 px-4 text-center space-y-4 z-10 relative">
       <div className="inline-flex items-center space-x-2 px-3.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-300 font-mono text-xs uppercase tracking-widest rounded-none">
         <span>Interactive Compositor Sandbox</span>
       </div>
@@ -1129,7 +1129,7 @@ export const PhysicsSection: React.FC = () => {
       </div>
     </div>
 
-      <section id="physics" ref={sectionRef} className="relative w-full h-[220vh] bg-slate-950">
+      <section id="physics" ref={sectionRef} className="relative w-full h-screen">
         <div className="w-full h-screen flex items-center justify-center overflow-hidden relative">
           {/* MULTI-STEP EXPLANATION TEXT COLUMN (LEFT SIDE) */}
           <div className="absolute left-[4vw] top-[18vh] w-[90vw] md:w-[40vw] z-30 pointer-events-none">
