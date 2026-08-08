@@ -72,6 +72,7 @@ export const Navbar: React.FC = () => {
               { name: 'Physics', href: '/#physics' },
               { name: 'Features', href: '/#features' },
               { name: 'Docs', href: '/docs' },
+              { name: 'Install', href: '/#install'}
             ].map((link) => (
               <a
                 key={link.name}

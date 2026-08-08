@@ -16,7 +16,7 @@ export const InstallSection: React.FC = () => {
   };
 
   return (
-    <section id="docs" className="relative z-10 pt-2 pb-16 px-4 sm:px-6 max-w-4xl mx-auto text-center">
+    <section id="install" className="relative z-10 pt-2 pb-16 px-4 sm:px-6 max-w-4xl mx-auto text-center">
       <div 
         className="p-[1px] bg-gradient-to-r from-amber-500/30 via-amber-400/60 to-amber-500/30 shadow-[0_0_40px_rgba(208,168,44,0.15)] transition-all duration-300 mx-auto"
         style={{ clipPath: 'polygon(40px 0%, calc(100% - 40px) 0%, 100% 50%, calc(100% - 40px) 100%, 40px 100%, 0% 50%)' }}
