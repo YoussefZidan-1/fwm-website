@@ -1169,7 +1169,7 @@ export const PhysicsSection: React.FC = () => {
                 Engineered in C for <span className="text-amber-400">Wayland</span>
               </h3>
               <p className="font-body text-slate-300 text-sm md:text-base font-light leading-relaxed">
-                Built natively in C11 on <code className="text-amber-300 font-mono text-xs bg-slate-900 px-1.5 py-0.5 border border-slate-800">wlroots 0.17+</code> and <code className="text-amber-300 font-mono text-xs bg-slate-900 px-1.5 py-0.5 border border-slate-800">Box2D 3.x</code> to give zero sub-pixel jitter.
+                Built natively in C11 on <code className="text-amber-300 font-mono text-xs bg-slate-900 px-1.5 py-0.5 border border-slate-800">wlroots</code> and <code className="text-amber-300 font-mono text-xs bg-slate-900 px-1.5 py-0.5 border border-slate-800">Box2D V3</code> to give zero sub-pixel jitter.
               </p>
               <ul className="space-y-2.5 pt-1 font-body text-xs md:text-sm text-slate-300">
                 <li className="flex items-start space-x-2.5">
